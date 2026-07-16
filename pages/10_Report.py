@@ -1,9 +1,7 @@
 import streamlit as st
-import os
-
+from datetime import datetime
 
 from utils.report import generate_report
-
 
 
 st.title(
@@ -11,140 +9,220 @@ st.title(
 )
 
 
+# =====================================================
+# CHECK DATA
+# =====================================================
 
-required = [
+if "processed_data" not in st.session_state:
 
-    "final_biomarkers",
+    st.warning(
+        "Processed dataset not found. Please complete preprocessing first."
+    )
 
-    "model_metrics",
-
-    "gene_annotations",
-
-    "pathways"
-
-]
-
-
-
-for item in required:
-
-    if item not in st.session_state:
-
-        st.warning(
-            f"Missing: {item}"
-        )
-
-        st.stop()
+    st.stop()
 
 
 
-# Dataset Information
+if "selected_biomarkers" not in st.session_state:
 
+    st.warning(
+        "Biomarker results not found. Please complete feature selection first."
+    )
 
-df = st.session_state[
-    "processed_dataset"
-]
-
-
-dataset_info = {
-
-    "Genes":
-        df.shape[0],
-
-    "Samples":
-        df.shape[1]-2,
-
-    "Pipeline":
-        "AI Biomarker Discovery"
-
-}
+    st.stop()
 
 
 
-metrics = st.session_state[
-    "model_metrics"
+expression_df = st.session_state[
+    "processed_data"
 ]
 
 
 biomarkers = st.session_state[
-    "final_biomarkers"
+    "selected_biomarkers"
 ]
 
 
-annotations = st.session_state[
-    "gene_annotations"
-]
+# =====================================================
+# OPTIONAL MODEL RESULTS
+# =====================================================
+
+model_metrics = None
+
+if "model_metrics" in st.session_state:
+
+    model_metrics = st.session_state[
+        "model_metrics"
+    ]
 
 
-pathways = st.session_state[
-    "pathways"
-]
+
+shap_results = None
+
+if "shap_importance" in st.session_state:
+
+    shap_results = st.session_state[
+        "shap_importance"
+    ]
 
 
+
+# =====================================================
+# REPORT PREVIEW
+# =====================================================
+
+st.header(
+    "🔬 Biomarker Discovery Summary"
+)
+
+
+
+st.write(
+    "Generated:",
+    datetime.now().strftime("%Y-%m-%d")
+)
+
+
+
+st.subheader(
+    "Dataset Information"
+)
+
+
+col1, col2 = st.columns(2)
+
+
+with col1:
+
+    st.metric(
+        "Genes",
+        expression_df.shape[0]
+    )
+
+
+with col2:
+
+    st.metric(
+        "Samples",
+        expression_df.shape[1]-1
+    )
+
+
+
+# =====================================================
+# BIOMARKERS
+# =====================================================
+
+st.subheader(
+    "🧬 Top Biomarkers"
+)
+
+
+st.dataframe(
+    biomarkers.head(20)
+)
+
+
+
+# =====================================================
+# SHAP RESULTS
+# =====================================================
+
+if shap_results is not None:
+
+
+    st.subheader(
+        "Explainable AI Results"
+    )
+
+
+    st.dataframe(
+        shap_results.head(10)
+    )
+
+
+
+# =====================================================
+# MODEL RESULTS
+# =====================================================
+
+if model_metrics is not None:
+
+
+    st.subheader(
+        "Machine Learning Performance"
+    )
+
+
+    col1, col2, col3 = st.columns(3)
+
+
+    with col1:
+
+        st.metric(
+            "Accuracy",
+            round(
+                model_metrics["Accuracy"],
+                3
+            )
+        )
+
+
+    with col2:
+
+        st.metric(
+            "F1 Score",
+            round(
+                model_metrics["F1 Score"],
+                3
+            )
+        )
+
+
+    with col3:
+
+        if model_metrics["ROC-AUC"]:
+
+            st.metric(
+                "ROC-AUC",
+                round(
+                    model_metrics["ROC-AUC"],
+                    3
+                )
+            )
+
+
+
+# =====================================================
+# DOWNLOAD REPORT
+# =====================================================
 
 if st.button(
-    "Generate PDF Report"
+    "Generate Report"
 ):
 
 
-    os.makedirs(
-        "reports/generated_reports",
-        exist_ok=True
-    )
+    report_text = generate_report(
 
-
-    filename = (
-        "reports/generated_reports/"
-        "AI_Biomarker_Report.pdf"
-    )
-
-
-    generate_report(
-
-        filename,
-
-        dataset_info,
-
-        metrics,
+        expression_df,
 
         biomarkers,
 
-        annotations,
+        model_metrics,
 
-        pathways
+        shap_results
 
     )
 
 
-    st.session_state[
-        "report_file"
-    ] = filename
+    st.download_button(
 
+        label="📥 Download Research Report",
 
+        data=report_text,
 
-    st.success(
-        "Report generated successfully!"
+        file_name="AI_Biomarker_Report.txt",
+
+        mime="text/plain"
+
     )
-
-
-
-if "report_file" in st.session_state:
-
-
-    with open(
-        st.session_state["report_file"],
-        "rb"
-    ) as file:
-
-
-        st.download_button(
-
-            label="⬇️ Download PDF Report",
-
-            data=file,
-
-            file_name="AI_Biomarker_Report.pdf",
-
-            mime="application/pdf"
-
-        )
