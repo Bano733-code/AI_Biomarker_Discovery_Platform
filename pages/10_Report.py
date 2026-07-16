@@ -1,7 +1,9 @@
+import os
 import streamlit as st
-from datetime import datetime
+
 
 from utils.report import generate_report
+
 
 
 st.title(
@@ -9,9 +11,11 @@ st.title(
 )
 
 
+
 # =====================================================
-# CHECK DATA
+# CHECK REQUIRED DATA
 # =====================================================
+
 
 if "processed_data" not in st.session_state:
 
@@ -33,6 +37,11 @@ if "selected_biomarkers" not in st.session_state:
 
 
 
+# =====================================================
+# LOAD DATA
+# =====================================================
+
+
 expression_df = st.session_state[
     "processed_data"
 ]
@@ -43,11 +52,8 @@ biomarkers = st.session_state[
 ]
 
 
-# =====================================================
-# OPTIONAL MODEL RESULTS
-# =====================================================
 
-model_metrics = None
+# Optional ML results
 
 if "model_metrics" in st.session_state:
 
@@ -55,9 +61,13 @@ if "model_metrics" in st.session_state:
         "model_metrics"
     ]
 
+else:
+
+    model_metrics = None
 
 
-shap_results = None
+
+# Optional SHAP results
 
 if "shap_importance" in st.session_state:
 
@@ -65,22 +75,34 @@ if "shap_importance" in st.session_state:
         "shap_importance"
     ]
 
+else:
+
+    shap_results = None
+
 
 
 # =====================================================
 # REPORT PREVIEW
 # =====================================================
 
+
 st.header(
-    "🔬 Biomarker Discovery Summary"
+    "🔬 AI Biomarker Discovery Summary"
 )
 
 
 
-st.write(
-    "Generated:",
-    datetime.now().strftime("%Y-%m-%d")
-)
+# Dataset information
+
+dataset_info = {
+
+    "Total Genes":
+        expression_df.shape[0],
+
+    "Total Samples":
+        expression_df.shape[1] - 1
+
+}
 
 
 
@@ -89,38 +111,110 @@ st.subheader(
 )
 
 
+
 col1, col2 = st.columns(2)
+
 
 
 with col1:
 
     st.metric(
         "Genes",
-        expression_df.shape[0]
+        dataset_info["Total Genes"]
     )
+
 
 
 with col2:
 
     st.metric(
         "Samples",
-        expression_df.shape[1]-1
+        dataset_info["Total Samples"]
     )
 
 
 
 # =====================================================
-# BIOMARKERS
+# BIOMARKER RESULTS
 # =====================================================
+
 
 st.subheader(
     "🧬 Top Biomarkers"
 )
 
 
+
 st.dataframe(
-    biomarkers.head(20)
+
+    biomarkers.head(10)
+
 )
+
+
+
+# =====================================================
+# ML RESULTS
+# =====================================================
+
+
+if model_metrics is not None:
+
+
+    st.subheader(
+        "🤖 Machine Learning Performance"
+    )
+
+
+    col1, col2, col3 = st.columns(3)
+
+
+
+    with col1:
+
+        st.metric(
+
+            "Accuracy",
+
+            round(
+                model_metrics["Accuracy"],
+                3
+            )
+
+        )
+
+
+
+    with col2:
+
+        st.metric(
+
+            "F1 Score",
+
+            round(
+                model_metrics["F1 Score"],
+                3
+            )
+
+        )
+
+
+
+    with col3:
+
+
+        if model_metrics["ROC-AUC"] is not None:
+
+            st.metric(
+
+                "ROC-AUC",
+
+                round(
+                    model_metrics["ROC-AUC"],
+                    3
+                )
+
+            )
 
 
 
@@ -128,101 +222,96 @@ st.dataframe(
 # SHAP RESULTS
 # =====================================================
 
+
 if shap_results is not None:
 
 
     st.subheader(
-        "Explainable AI Results"
+        "🔍 SHAP Explainability"
     )
 
 
     st.dataframe(
+
         shap_results.head(10)
+
     )
 
 
 
 # =====================================================
-# MODEL RESULTS
+# GENERATE PDF REPORT
 # =====================================================
 
-if model_metrics is not None:
 
-
-    st.subheader(
-        "Machine Learning Performance"
-    )
-
-
-    col1, col2, col3 = st.columns(3)
-
-
-    with col1:
-
-        st.metric(
-            "Accuracy",
-            round(
-                model_metrics["Accuracy"],
-                3
-            )
-        )
-
-
-    with col2:
-
-        st.metric(
-            "F1 Score",
-            round(
-                model_metrics["F1 Score"],
-                3
-            )
-        )
-
-
-    with col3:
-
-        if model_metrics["ROC-AUC"]:
-
-            st.metric(
-                "ROC-AUC",
-                round(
-                    model_metrics["ROC-AUC"],
-                    3
-                )
-            )
+st.divider()
 
 
 
-# =====================================================
-# DOWNLOAD REPORT
-# =====================================================
+st.subheader(
+    "Generate PDF Report"
+)
+
+
 
 if st.button(
-    "Generate Report"
+    "📄 Create Research Report"
 ):
 
 
-    report_text = generate_report(
+    # create reports folder
 
-        expression_df,
+    os.makedirs(
+        "reports",
+        exist_ok=True
+    )
 
-        biomarkers,
+
+    report_file = (
+        "reports/"
+        "AI_Biomarker_Discovery_Report.pdf"
+    )
+
+
+
+    generate_report(
+
+        report_file,
+
+        dataset_info,
 
         model_metrics,
+
+        biomarkers,
 
         shap_results
 
     )
 
 
-    st.download_button(
 
-        label="📥 Download Research Report",
-
-        data=report_text,
-
-        file_name="AI_Biomarker_Report.txt",
-
-        mime="text/plain"
-
+    st.success(
+        "Report generated successfully!"
     )
+
+
+
+    with open(
+        report_file,
+        "rb"
+    ) as pdf:
+
+
+        st.download_button(
+
+            label="📥 Download PDF Report",
+
+            data=pdf,
+
+            file_name=
+            "AI_Biomarker_Discovery_Report.pdf",
+
+            mime=
+            "application/pdf"
+
+        )
