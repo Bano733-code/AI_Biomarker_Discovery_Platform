@@ -88,7 +88,8 @@ st.header(
     "Principal Component Analysis (PCA)"
 )
 
-
+st.write("Data Types:")
+st.write(df.dtypes)
 
 pca_df, variance = perform_pca(df)
 
