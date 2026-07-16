@@ -7,95 +7,101 @@ from utils.preprocessing import (
     scale_data
 )
 
+# =====================================================
+# PAGE TITLE
+# =====================================================
 
 st.title("⚙️ Data Preprocessing")
 
+# =====================================================
+# CHECK DATASET
+# =====================================================
 
-if "dataset" not in st.session_state:
+if "expression_data" not in st.session_state:
 
     st.warning(
-        "Please upload a dataset first."
+        "Please upload or load a dataset first."
     )
 
     st.stop()
 
-
-
 expression_df = st.session_state["expression_data"]
-
 metadata_df = st.session_state["metadata"]
 
+# =====================================================
+# ORIGINAL DATASET
+# =====================================================
 
-st.subheader(
-    "Original Dataset"
-)
+st.subheader("🧬 Original Expression Matrix")
 
 st.dataframe(
-    df.head()
+    expression_df.head()
 )
 
+processed_df = expression_df.copy()
 
-processed_df = df.copy()
+# =====================================================
+# PREPROCESSING OPTIONS
+# =====================================================
 
-
+st.header("Preprocessing Options")
 
 # -------------------------
-# Duplicate Removal
+# Remove Duplicate Genes
 # -------------------------
 
-if st.checkbox(
-    "Remove duplicate genes",
+remove_duplicates = st.checkbox(
+    "Remove Duplicate Genes",
     value=True
-):
+)
+
+if remove_duplicates:
 
     processed_df = remove_duplicate_genes(
         processed_df
     )
 
-
 # -------------------------
-# Missing Values
+# Handle Missing Values
 # -------------------------
 
-if st.checkbox(
-    "Handle missing values",
+handle_missing = st.checkbox(
+    "Handle Missing Values",
     value=True
-):
+)
+
+if handle_missing:
 
     processed_df = handle_missing_values(
         processed_df
     )
 
-
-
 # -------------------------
-# Log Transformation
+# Log2 Transformation
 # -------------------------
 
-if st.checkbox(
+apply_log = st.checkbox(
     "Apply Log2 Transformation"
-):
+)
+
+if apply_log:
 
     processed_df = log_transform(
         processed_df
     )
-
-
 
 # -------------------------
 # Scaling
 # -------------------------
 
 scaling_option = st.selectbox(
-    "Select Scaling Method",
+    "Scaling Method",
     [
         "None",
         "Standard Scaling",
         "MinMax Scaling"
     ]
 )
-
-
 
 if scaling_option == "Standard Scaling":
 
@@ -104,7 +110,6 @@ if scaling_option == "Standard Scaling":
         "standard"
     )
 
-
 elif scaling_option == "MinMax Scaling":
 
     processed_df = scale_data(
@@ -112,33 +117,57 @@ elif scaling_option == "MinMax Scaling":
         "minmax"
     )
 
+# =====================================================
+# PROCESSED DATASET
+# =====================================================
 
+st.divider()
 
-# -------------------------
-# Preview
-# -------------------------
-
-st.subheader(
-    "Processed Dataset"
-)
-
+st.subheader("✅ Processed Expression Matrix")
 
 st.dataframe(
     processed_df.head()
 )
 
+# =====================================================
+# DATASET SUMMARY
+# =====================================================
 
+st.subheader("📊 Dataset Summary")
 
-# -------------------------
-# Save
-# -------------------------
+col1, col2, col3 = st.columns(3)
+
+with col1:
+
+    st.metric(
+        "Genes",
+        processed_df.shape[0]
+    )
+
+with col2:
+
+    st.metric(
+        "Samples",
+        processed_df.shape[1] - 1
+    )
+
+with col3:
+
+    st.metric(
+        "Groups",
+        metadata_df["Group"].nunique()
+    )
+
+# =====================================================
+# SAVE
+# =====================================================
 
 if st.button(
-    "Save Processed Dataset"
+    "💾 Save Processed Dataset",
+    use_container_width=True
 ):
 
     st.session_state["processed_data"] = processed_df
-
 
     st.success(
         "Processed dataset saved successfully!"
