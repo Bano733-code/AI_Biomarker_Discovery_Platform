@@ -23,13 +23,11 @@ def dataset_statistics(df: pd.DataFrame):
 
     return stats
 
-
-
 def prepare_expression_data(df):
 
     """
-    Remove gene column and prepare
-    numerical expression matrix.
+    Prepare numeric expression matrix
+    for ML and visualization.
     """
 
     gene_column = df.columns[0]
@@ -37,6 +35,27 @@ def prepare_expression_data(df):
     expression = df.drop(
         columns=[gene_column]
     )
+
+
+    # Convert all values to numeric
+    expression = expression.apply(
+        pd.to_numeric,
+        errors="coerce"
+    )
+
+
+    # Remove columns that became empty
+    expression = expression.dropna(
+        axis=1,
+        how="all"
+    )
+
+
+    # Fill remaining missing values
+    expression = expression.fillna(
+        expression.median()
+    )
+
 
     return expression
 
