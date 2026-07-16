@@ -8,170 +8,129 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-
-def dataset_statistics(df: pd.DataFrame):
-    """
-    Generate dataset statistics.
-    """
+def dataset_statistics(expression_df):
 
     stats = {
-        "Number of Genes": df.shape[0],
-        "Number of Samples": df.shape[1] - 1,
-        "Missing Values": df.isnull().sum().sum(),
-        "Duplicate Rows": df.duplicated().sum()
+        "Number of Genes": expression_df.shape[0],
+        "Number of Samples": expression_df.shape[1] - 1,
+        "Missing Values": expression_df.isnull().sum().sum(),
+        "Duplicate Rows": expression_df.duplicated().sum(),
     }
 
     return stats
 
-def prepare_expression_data(df):
 
-    """
-    Prepare numeric expression matrix
-    for ML and visualization.
-    """
+def prepare_expression_data(expression_df):
 
-    gene_column = df.columns[0]
+    expression = expression_df.iloc[:, 1:].copy()
 
-    expression = df.drop(
-        columns=[gene_column]
-    )
-
-
-    # Convert all values to numeric
     expression = expression.apply(
         pd.to_numeric,
-        errors="coerce"
+        errors="coerce",
     )
 
-
-    # Remove columns that became empty
-    expression = expression.dropna(
-        axis=1,
-        how="all"
-    )
-
-
-    # Fill remaining missing values
     expression = expression.fillna(
         expression.median()
     )
 
-
     return expression
 
 
+def perform_pca(expression_df, metadata_df):
 
-def perform_pca(df: pd.DataFrame):
+    expression = prepare_expression_data(
+        expression_df
+    )
 
-    """
-    Perform PCA on gene expression data.
-    """
+    # Rows = Samples
+    # Columns = Genes
 
-    expression = prepare_expression_data(df)
-
+    expression = expression.T
 
     scaler = StandardScaler()
 
-    scaled_data = scaler.fit_transform(
-        expression.T
-    )
-
+    scaled = scaler.fit_transform(expression)
 
     pca = PCA(
         n_components=2
     )
 
-
     components = pca.fit_transform(
-        scaled_data
+        scaled
     )
-
 
     pca_df = pd.DataFrame(
         components,
-        columns=[
-            "PC1",
-            "PC2"
-        ]
+        columns=["PC1", "PC2"],
     )
 
+    pca_df["Sample"] = expression.index
 
-    pca_df["Sample"] = expression.columns
-
+    pca_df = pca_df.merge(
+        metadata_df,
+        on="Sample",
+        how="left",
+    )
 
     return pca_df, pca.explained_variance_ratio_
 
 
-
 def create_pca_plot(pca_df):
-
-    """
-    Create interactive PCA plot.
-    """
 
     fig = px.scatter(
         pca_df,
         x="PC1",
         y="PC2",
+        color="Group",
+        hover_name="Sample",
         text="Sample",
-        title="PCA Analysis of Samples"
+        title="PCA of Samples",
     )
 
+    fig.update_traces(
+        textposition="top center"
+    )
 
     return fig
 
 
+def correlation_heatmap(expression_df):
 
-def correlation_heatmap(df):
-
-    """
-    Generate correlation heatmap.
-    """
-
-    expression = prepare_expression_data(df)
-
+    expression = prepare_expression_data(
+        expression_df
+    )
 
     correlation = expression.corr()
 
-
     fig, ax = plt.subplots(
-        figsize=(10,6)
+        figsize=(10, 8)
     )
-
 
     sns.heatmap(
         correlation,
         cmap="coolwarm",
-        ax=ax
+        ax=ax,
     )
-
 
     ax.set_title(
         "Sample Correlation Heatmap"
     )
 
-
     return fig
 
 
+def sample_clustering(expression_df):
 
-def sample_clustering(df):
-
-    """
-    Create sample correlation clustering.
-    """
-
-    expression = prepare_expression_data(df)
-
+    expression = prepare_expression_data(
+        expression_df
+    )
 
     correlation = expression.corr()
 
-
     fig = px.imshow(
         correlation,
-        title="Sample Clustering Matrix",
-        text_auto=True
+        text_auto=True,
+        title="Sample Clustering",
     )
-
 
     return fig
