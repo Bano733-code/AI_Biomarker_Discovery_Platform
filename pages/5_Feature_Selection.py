@@ -17,7 +17,7 @@ st.title(
 
 
 
-if "processed_dataset" not in st.session_state:
+if "processed_data" not in st.session_state:
 
     st.warning(
         "Please complete preprocessing first."
@@ -25,6 +25,8 @@ if "processed_dataset" not in st.session_state:
 
     st.stop()
 
+expression_df = st.session_state["processed_data"]
+metadata_df = st.session_state["metadata"]
 
 
 df = st.session_state[
