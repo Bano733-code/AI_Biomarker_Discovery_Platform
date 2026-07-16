@@ -27,9 +27,9 @@ if "processed_dataset" not in st.session_state:
 
 
 
-df = st.session_state[
-    "processed_dataset"
-]
+expression_df = st.session_state["processed_data"]
+
+metadata_df = st.session_state["metadata"]
 
 
 
