@@ -1,5 +1,6 @@
-import pandas as pd
+import os
 import joblib
+import pandas as pd
 
 from sklearn.model_selection import train_test_split
 
@@ -13,56 +14,88 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
     roc_auc_score,
-    confusion_matrix
+    confusion_matrix,
+    classification_report
 )
 
 
+# =====================================================
+# PREPARE MACHINE LEARNING DATA
+# =====================================================
 
-def prepare_ml_data(df):
+def prepare_ml_data(
+        expression_df,
+        metadata_df
+):
     """
-    Prepare dataset for machine learning.
+    Prepare expression matrix for ML.
 
-    First column:
-    Gene names
+    Input:
 
-    Last column:
-    Disease labels
+    expression_df:
+        Genes x Samples
+
+    metadata_df:
+        Sample labels
+
+    Output:
+
+    X:
+        Samples x Genes
+
+    y:
+        Disease labels
     """
 
 
-    gene_column = df.columns[0]
+    # Remove gene column
 
-    label_column = df.columns[-1]
-
-
-    X = df.drop(
-        columns=[
-            gene_column,
-            label_column
-        ]
-    )
+    genes = expression_df.iloc[:, 0]
 
 
-    y = df[label_column]
+    expression = expression_df.iloc[:, 1:]
 
 
-    return X.T, y
+    # Samples as rows
+
+    X = expression.T
+
+
+    # Gene names become features
+
+    X.columns = genes
+
+
+    # Target labels
+
+    y = metadata_df["Group"]
+
+
+    return X, y
 
 
 
+# =====================================================
+# TRAIN TEST SPLIT
+# =====================================================
 
-def split_data(X, y):
-
-    """
-    Split dataset into train and test.
-    """
+def split_data(
+        X,
+        y
+):
 
     X_train, X_test, y_train, y_test = train_test_split(
+
         X,
+
         y,
+
         test_size=0.3,
+
         random_state=42,
+
         stratify=y
+
     )
 
 
@@ -75,20 +108,21 @@ def split_data(X, y):
 
 
 
+# =====================================================
+# RANDOM FOREST
+# =====================================================
 
 def train_random_forest(
         X_train,
         y_train
 ):
 
-    """
-    Train Random Forest classifier.
-    """
-
-
     model = RandomForestClassifier(
-        n_estimators=100,
+
+        n_estimators=200,
+
         random_state=42
+
     )
 
 
@@ -102,26 +136,28 @@ def train_random_forest(
 
 
 
-
+# =====================================================
+# LOGISTIC REGRESSION
+# =====================================================
 
 def train_logistic_regression(
         X_train,
         y_train
 ):
 
-    """
-    Train Logistic Regression model.
-    """
-
-
     model = LogisticRegression(
-        max_iter=1000
+
+        max_iter=2000
+
     )
 
 
     model.fit(
+
         X_train,
+
         y_train
+
     )
 
 
@@ -129,17 +165,15 @@ def train_logistic_regression(
 
 
 
-
+# =====================================================
+# MODEL EVALUATION
+# =====================================================
 
 def evaluate_model(
         model,
         X_test,
         y_test
 ):
-
-    """
-    Calculate model performance metrics.
-    """
 
 
     predictions = model.predict(
@@ -151,34 +185,54 @@ def evaluate_model(
 
 
     metrics["Accuracy"] = accuracy_score(
+
         y_test,
+
         predictions
+
     )
 
 
     metrics["Precision"] = precision_score(
+
         y_test,
+
         predictions,
+
         average="weighted",
+
         zero_division=0
+
     )
 
 
     metrics["Recall"] = recall_score(
+
         y_test,
+
         predictions,
+
         average="weighted",
+
         zero_division=0
+
     )
 
 
     metrics["F1 Score"] = f1_score(
+
         y_test,
+
         predictions,
+
         average="weighted",
+
         zero_division=0
+
     )
 
+
+    # ROC-AUC
 
     try:
 
@@ -188,8 +242,11 @@ def evaluate_model(
 
 
         metrics["ROC-AUC"] = roc_auc_score(
+
             y_test,
+
             probabilities
+
         )
 
 
@@ -200,28 +257,54 @@ def evaluate_model(
 
 
     metrics["Confusion Matrix"] = confusion_matrix(
+
         y_test,
+
         predictions
+
     )
+
+
+    metrics["Classification Report"] = pd.DataFrame(
+
+        classification_report(
+
+            y_test,
+
+            predictions,
+
+            output_dict=True
+
+        )
+
+    ).T
+
 
 
     return metrics
 
 
 
-
+# =====================================================
+# SAVE MODEL
+# =====================================================
 
 def save_model(
         model,
         filename="models/biomarker_model.pkl"
 ):
 
-    """
-    Save trained model.
-    """
+
+    os.makedirs(
+        "models",
+        exist_ok=True
+    )
 
 
     joblib.dump(
+
         model,
+
         filename
+
     )
