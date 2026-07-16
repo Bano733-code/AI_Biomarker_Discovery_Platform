@@ -8,164 +8,139 @@ from sklearn.feature_selection import (
 from sklearn.ensemble import RandomForestClassifier
 
 
-
-def prepare_features(df):
-
+def prepare_features(
+    expression_df,
+    metadata_df
+):
     """
     Prepare X and y for feature selection.
+
+    Rows = Samples
+    Columns = Genes
     """
 
-    gene_column = df.columns[0]
-    label_column = df.columns[-1]
+    # Remove Gene column
 
+    expression = expression_df.iloc[:, 1:]
 
-    X = df.drop(
-        columns=[
-            gene_column,
-            label_column
-        ]
-    )
+    # Samples become rows
 
+    X = expression.T
 
-    y = df[label_column]
+    # Gene names become feature names
 
+    X.columns = expression_df.iloc[:, 0]
 
-    return X.T, y
+    # Labels
 
+    y = metadata_df["Group"]
+
+    return X, y
 
 
 def anova_selection(X, y):
-
-    """
-    ANOVA feature selection.
-    """
 
     scores, p_values = f_classif(
         X,
         y
     )
 
+    result = pd.DataFrame({
 
-    result = pd.DataFrame(
-        {
-            "Gene": X.columns,
-            "ANOVA_Score": scores,
-            "P_Value": p_values
-        }
-    )
+        "Gene": X.columns,
 
+        "ANOVA Score": scores,
 
-    result = result.sort_values(
-        by="ANOVA_Score",
+        "P Value": p_values
+
+    })
+
+    return result.sort_values(
+        by="ANOVA Score",
         ascending=False
     )
-
-
-    return result
-
 
 
 def mutual_information_selection(X, y):
 
-    """
-    Mutual information ranking.
-    """
-
     scores = mutual_info_classif(
         X,
-        y
+        y,
+        random_state=42
     )
 
+    result = pd.DataFrame({
 
-    result = pd.DataFrame(
-        {
-            "Gene": X.columns,
-            "MI_Score": scores
-        }
-    )
+        "Gene": X.columns,
 
+        "MI Score": scores
 
-    result = result.sort_values(
-        by="MI_Score",
+    })
+
+    return result.sort_values(
+        by="MI Score",
         ascending=False
     )
 
 
-    return result
-
-
-
 def random_forest_selection(X, y):
 
-    """
-    Random Forest feature importance.
-    """
-
-
     model = RandomForestClassifier(
-        n_estimators=100,
+
+        n_estimators=200,
+
         random_state=42
+
     )
 
+    model.fit(X, y)
 
-    model.fit(
-        X,
-        y
-    )
+    result = pd.DataFrame({
 
+        "Gene": X.columns,
 
-    result = pd.DataFrame(
-        {
-            "Gene": X.columns,
-            "Importance":
-                model.feature_importances_
-        }
-    )
+        "Importance": model.feature_importances_
 
+    })
 
-    result = result.sort_values(
+    return result.sort_values(
         by="Importance",
         ascending=False
     )
 
 
-    return result
-
-
-
 def combine_rankings(
-        anova,
-        mi,
-        rf
+    anova,
+    mi,
+    rf
 ):
-
-    """
-    Combine feature ranking results.
-    """
-
 
     merged = anova.merge(
         mi,
         on="Gene"
     )
 
-
     merged = merged.merge(
         rf,
         on="Gene"
     )
 
+    merged["Final Score"] = (
 
-    merged["Final_Score"] = (
-        merged["ANOVA_Score"].rank()
+        merged["ANOVA Score"].rank(ascending=False)
+
         +
-        merged["MI_Score"].rank()
+
+        merged["MI Score"].rank(ascending=False)
+
         +
-        merged["Importance"].rank()
+
+        merged["Importance"].rank(ascending=False)
+
     )
 
-
-    return merged.sort_values(
-        by="Final_Score",
-        ascending=False
+    merged = merged.sort_values(
+        by="Final Score"
     )
+
+    return merged
