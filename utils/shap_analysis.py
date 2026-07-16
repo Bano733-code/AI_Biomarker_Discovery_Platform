@@ -3,6 +3,9 @@ import shap
 
 import matplotlib.pyplot as plt
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+
 
 
 # =====================================================
@@ -15,16 +18,41 @@ def calculate_shap_values(
 ):
 
     """
-    Calculate SHAP values.
-
-    Supports tree models
-    like Random Forest.
+    Calculate SHAP values based on model type.
     """
 
 
-    explainer = shap.TreeExplainer(
-        model
-    )
+    # Random Forest
+
+    if isinstance(
+        model,
+        RandomForestClassifier
+    ):
+
+        explainer = shap.TreeExplainer(
+            model
+        )
+
+
+    # Logistic Regression
+
+    elif isinstance(
+        model,
+        LogisticRegression
+    ):
+
+        explainer = shap.LinearExplainer(
+            model,
+            X
+        )
+
+
+    else:
+
+        raise Exception(
+            "Unsupported model for SHAP"
+        )
+
 
 
     shap_values = explainer.shap_values(
@@ -46,13 +74,11 @@ def get_feature_importance(
         shap_values
 ):
 
-    """
-    Rank genes using
-    mean absolute SHAP value.
-    """
 
-
-    if isinstance(shap_values, list):
+    if isinstance(
+        shap_values,
+        list
+    ):
 
         values = shap_values[1]
 
@@ -69,12 +95,11 @@ def get_feature_importance(
             "Gene": X.columns,
 
             "SHAP Importance":
-                abs(values).mean(axis=0)
+            abs(values).mean(axis=0)
 
         }
 
     )
-
 
 
     importance = importance.sort_values(
@@ -92,7 +117,7 @@ def get_feature_importance(
 
 
 # =====================================================
-# SHAP SUMMARY PLOT
+# SUMMARY PLOT
 # =====================================================
 
 def shap_summary_plot(
@@ -101,7 +126,10 @@ def shap_summary_plot(
 ):
 
 
-    if isinstance(shap_values,list):
+    if isinstance(
+        shap_values,
+        list
+    ):
 
         values = shap_values[1]
 
@@ -133,7 +161,7 @@ def shap_summary_plot(
 
 
 # =====================================================
-# SHAP BAR PLOT
+# BAR PLOT
 # =====================================================
 
 def shap_bar_plot(
@@ -142,7 +170,10 @@ def shap_bar_plot(
 ):
 
 
-    if isinstance(shap_values,list):
+    if isinstance(
+        shap_values,
+        list
+    ):
 
         values = shap_values[1]
 
