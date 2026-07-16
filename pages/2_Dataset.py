@@ -10,12 +10,10 @@ from utils.data_loader import (
 
 st.title("📂 Dataset Upload")
 
-st.write(
-    """
-    Upload a gene expression matrix and its corresponding
-    sample metadata, or use the provided example dataset.
-    """
-)
+st.markdown("""
+Upload a **Gene Expression Matrix** together with its
+**Sample Metadata**, or use the provided example dataset.
+""")
 
 # ======================================================
 # DATASET SOURCE
@@ -24,8 +22,8 @@ st.write(
 option = st.radio(
     "Choose Dataset Source",
     [
-        "Use Example Dataset",
-        "Upload Your Own Dataset"
+        "🧪 Use Example Dataset",
+        "📤 Upload Your Own Dataset"
     ]
 )
 
@@ -36,7 +34,7 @@ metadata_df = None
 # EXAMPLE DATASET
 # ======================================================
 
-if option == "Use Example Dataset":
+if option == "🧪 Use Example Dataset":
 
     expression_path = "data/example_expression.csv"
     metadata_path = "data/sample_metadata.csv"
@@ -46,32 +44,26 @@ if option == "Use Example Dataset":
         expression_df = load_expression_data(expression_path)
         metadata_df = load_metadata(metadata_path)
 
-        st.success("Example dataset loaded successfully.")
+        st.success("✅ Example dataset loaded successfully.")
 
     else:
 
         st.error("Example dataset files not found.")
 
 # ======================================================
-# USER UPLOAD
+# USER DATASET
 # ======================================================
 
 else:
 
-    st.subheader("🧬 Upload Expression Matrix")
-
     expression_file = st.file_uploader(
         "Upload Expression Matrix (.csv)",
-        type=["csv"],
-        key="expression_file"
+        type=["csv"]
     )
-
-    st.subheader("📋 Upload Sample Metadata")
 
     metadata_file = st.file_uploader(
         "Upload Sample Metadata (.csv)",
-        type=["csv"],
-        key="metadata_file"
+        type=["csv"]
     )
 
     if expression_file is not None and metadata_file is not None:
@@ -79,27 +71,43 @@ else:
         expression_df = load_expression_data(expression_file)
         metadata_df = load_metadata(metadata_file)
 
+    elif expression_file is not None or metadata_file is not None:
+
+        st.warning("Please upload BOTH Expression Matrix and Metadata.")
+
 # ======================================================
 # DISPLAY
 # ======================================================
 
 if expression_df is not None and metadata_df is not None:
 
+    # ------------------------
+    # Validate Metadata Format
+    # ------------------------
+
+    required_columns = ["Sample", "Group"]
+
+    missing = [
+        col
+        for col in required_columns
+        if col not in metadata_df.columns
+    ]
+
+    if missing:
+
+        st.error(
+            f"Metadata file is missing columns: {missing}"
+        )
+
+        st.stop()
+
+    # ------------------------
+    # Summary
+    # ------------------------
+
     st.divider()
 
-    st.header("🧬 Expression Matrix")
-
-    st.dataframe(expression_df.head())
-
-    st.header("📋 Sample Metadata")
-
-    st.dataframe(metadata_df)
-
-    # ==================================================
-    # DATASET INFORMATION
-    # ==================================================
-
-    st.header("📊 Dataset Information")
+    st.header("📊 Dataset Summary")
 
     col1, col2, col3 = st.columns(3)
 
@@ -117,13 +125,29 @@ if expression_df is not None and metadata_df is not None:
 
     with col3:
         st.metric(
-            "Groups",
+            "Classes",
             metadata_df["Group"].nunique()
         )
 
-    # ==================================================
-    # VALIDATION
-    # ==================================================
+    # ------------------------
+    # Preview
+    # ------------------------
+
+    with st.expander("🧬 Expression Matrix Preview"):
+
+        st.dataframe(
+            expression_df.head()
+        )
+
+    with st.expander("📋 Metadata Preview"):
+
+        st.dataframe(
+            metadata_df
+        )
+
+    # ------------------------
+    # Validation
+    # ------------------------
 
     st.header("✅ Validation Report")
 
@@ -136,22 +160,30 @@ if expression_df is not None and metadata_df is not None:
         expression_df
     )
 
-    st.subheader("Expression Matrix")
+    col1, col2 = st.columns(2)
 
-    st.json(expression_report)
+    with col1:
 
-    st.subheader("Sample Metadata")
+        st.subheader("Expression Matrix")
 
-    st.json(metadata_report)
+        st.json(expression_report)
 
-    # ==================================================
-    # SAVE
-    # ==================================================
+    with col2:
 
-    if st.button("💾 Save Dataset"):
+        st.subheader("Metadata")
+
+        st.json(metadata_report)
+
+    # ------------------------
+    # Save Dataset
+    # ------------------------
+
+    if st.button(
+        "💾 Save Dataset",
+        use_container_width=True
+    ):
 
         st.session_state["expression_data"] = expression_df
-
         st.session_state["metadata"] = metadata_df
 
         st.success(
