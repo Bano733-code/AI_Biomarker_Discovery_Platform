@@ -15,13 +15,20 @@ def generate_report(
         dataset_info,
         metrics,
         biomarkers,
-        annotations,
-        pathways
+        shap_results=None
 ):
 
     """
-    Generate PDF research report.
+    Generate AI Biomarker Discovery PDF Report.
+
+    Includes:
+
+    - Dataset information
+    - ML performance
+    - Biomarker ranking
+    - SHAP explainability
     """
+
 
 
     doc = SimpleDocTemplate(
@@ -35,13 +42,18 @@ def generate_report(
     content = []
 
 
-    # Title
+
+    # =================================================
+    # TITLE
+    # =================================================
 
     content.append(
+
         Paragraph(
-            "AI Biomarker Discovery Report",
+            "AI Biomarker Discovery Platform Report",
             styles["Title"]
         )
+
     )
 
 
@@ -51,23 +63,30 @@ def generate_report(
 
 
 
-    # Dataset Summary
+    # =================================================
+    # DATASET SUMMARY
+    # =================================================
 
     content.append(
+
         Paragraph(
             "1. Dataset Summary",
             styles["Heading2"]
         )
+
     )
 
 
     for key,value in dataset_info.items():
 
+
         content.append(
+
             Paragraph(
                 f"{key}: {value}",
                 styles["BodyText"]
             )
+
         )
 
 
@@ -78,13 +97,17 @@ def generate_report(
 
 
 
-    # ML Performance
+    # =================================================
+    # MACHINE LEARNING RESULTS
+    # =================================================
 
     content.append(
+
         Paragraph(
             "2. Machine Learning Performance",
             styles["Heading2"]
         )
+
     )
 
 
@@ -93,7 +116,9 @@ def generate_report(
 
         for key,value in metrics.items():
 
+
             if key != "Confusion Matrix":
+
 
                 content.append(
 
@@ -105,6 +130,18 @@ def generate_report(
                 )
 
 
+    else:
+
+        content.append(
+
+            Paragraph(
+                "Machine learning results not available.",
+                styles["BodyText"]
+            )
+
+        )
+
+
 
     content.append(
         Spacer(1,20)
@@ -112,14 +149,19 @@ def generate_report(
 
 
 
-    # Biomarkers
+    # =================================================
+    # BIOMARKER RESULTS
+    # =================================================
 
     content.append(
+
         Paragraph(
             "3. Top Biomarkers",
             styles["Heading2"]
         )
+
     )
+
 
 
     table_data = [
@@ -136,6 +178,27 @@ def generate_report(
     for _,row in biomarkers.head(10).iterrows():
 
 
+        score = None
+
+
+        # support different ranking columns
+
+        if "Final Score" in biomarkers.columns:
+
+            score = row["Final Score"]
+
+
+        elif "SHAP Importance" in biomarkers.columns:
+
+            score = row["SHAP Importance"]
+
+
+        elif "Importance" in biomarkers.columns:
+
+            score = row["Importance"]
+
+
+
         table_data.append(
 
             [
@@ -144,7 +207,7 @@ def generate_report(
 
                 str(
                     round(
-                        row["Biomarker_Score"],
+                        float(score),
                         3
                     )
                 )
@@ -160,9 +223,13 @@ def generate_report(
     )
 
 
+
     table.setStyle(
+
         TableStyle(
+
             [
+
                 (
                     "GRID",
                     (0,0),
@@ -170,8 +237,11 @@ def generate_report(
                     0.5,
                     None
                 )
+
             ]
+
         )
+
     )
 
 
@@ -187,31 +257,96 @@ def generate_report(
 
 
 
-    # Gene Annotation
+    # =================================================
+    # SHAP RESULTS
+    # =================================================
 
     content.append(
 
         Paragraph(
-            "4. Biological Interpretation",
+            "4. Explainable AI (SHAP) Results",
             styles["Heading2"]
         )
 
     )
 
 
-    for _,row in annotations.iterrows():
 
-        text = (
-            f"{row['Gene']} - "
-            f"{row['Name']} : "
-            f"{row['Summary']}"
+    if shap_results is not None:
+
+
+        shap_table = [
+
+            [
+
+                "Gene",
+
+                "SHAP Importance"
+
+            ]
+
+        ]
+
+
+        for _,row in shap_results.head(10).iterrows():
+
+
+            shap_table.append(
+
+                [
+
+                    str(row["Gene"]),
+
+                    str(
+                        round(
+                            row["SHAP Importance"],
+                            4
+                        )
+                    )
+
+                ]
+
+            )
+
+
+        table = Table(
+            shap_table
         )
+
+
+        table.setStyle(
+
+            TableStyle(
+
+                [
+
+                    (
+                        "GRID",
+                        (0,0),
+                        (-1,-1),
+                        0.5,
+                        None
+                    )
+
+                ]
+
+            )
+
+        )
+
+
+        content.append(
+            table
+        )
+
+
+    else:
 
 
         content.append(
 
             Paragraph(
-                text,
+                "SHAP analysis not available.",
                 styles["BodyText"]
             )
 
@@ -225,31 +360,39 @@ def generate_report(
 
 
 
-    # Pathways
+    # =================================================
+    # CONCLUSION
+    # =================================================
 
     content.append(
 
         Paragraph(
-            "5. Pathway Enrichment",
+            "5. Conclusion",
             styles["Heading2"]
         )
 
     )
 
 
-    for _,row in pathways.head(10).iterrows():
+    content.append(
 
-        content.append(
+        Paragraph(
 
-            Paragraph(
-                f"{row['Source']} - {row['Term']} "
-                f"(p={row['P-value']})",
-                styles["BodyText"]
-            )
+            """
+            This report summarizes an AI-driven biomarker discovery workflow
+            including preprocessing, machine learning classification,
+            feature selection, and explainable AI analysis.
+            """,
+
+            styles["BodyText"]
 
         )
 
+    )
 
+
+
+    # BUILD PDF
 
     doc.build(
         content
