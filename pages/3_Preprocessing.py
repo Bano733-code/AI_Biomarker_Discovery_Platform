@@ -21,7 +21,9 @@ if "dataset" not in st.session_state:
 
 
 
-df = st.session_state["dataset"]
+expression_df = st.session_state["expression_data"]
+
+metadata_df = st.session_state["metadata"]
 
 
 st.subheader(
@@ -135,9 +137,7 @@ if st.button(
     "Save Processed Dataset"
 ):
 
-    st.session_state[
-        "processed_dataset"
-    ] = processed_df
+    st.session_state["processed_data"] = processed_df
 
 
     st.success(
