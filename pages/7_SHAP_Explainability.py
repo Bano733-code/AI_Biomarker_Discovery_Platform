@@ -9,12 +9,14 @@ from utils.shap_analysis import (
 )
 
 
-
 st.title(
     "🔍 SHAP Explainable AI"
 )
 
 
+# =====================================================
+# CHECK MODEL
+# =====================================================
 
 if "trained_model" not in st.session_state:
 
@@ -26,14 +28,23 @@ if "trained_model" not in st.session_state:
 
 
 
-if "processed_dataset" not in st.session_state:
+# =====================================================
+# CHECK DATA
+# =====================================================
+
+if "processed_data" not in st.session_state:
 
     st.warning(
-        "Dataset not found."
+        "Processed dataset not found."
     )
 
     st.stop()
 
+
+
+expression_df = st.session_state[
+    "processed_data"
+]
 
 
 model = st.session_state[
@@ -41,28 +52,20 @@ model = st.session_state[
 ]
 
 
-df = st.session_state[
-    "processed_dataset"
-]
+# =====================================================
+# PREPARE FEATURES
+# =====================================================
+
+gene_names = expression_df.iloc[:,0]
 
 
-
-# Prepare data
-
-gene_column = df.columns[0]
-
-label_column = df.columns[-1]
+expression = expression_df.iloc[:,1:]
 
 
-X = df.drop(
-    columns=[
-        gene_column,
-        label_column
-    ]
-)
+X = expression.T
 
 
-X = X.T
+X.columns = gene_names
 
 
 
@@ -72,25 +75,43 @@ st.subheader(
 
 
 st.write(
-    X.shape
+    "Samples:",
+    X.shape[0]
+)
+
+
+st.write(
+    "Genes:",
+    X.shape[1]
 )
 
 
 
+# =====================================================
+# RUN SHAP
+# =====================================================
+
 if st.button(
-    "Generate SHAP Explanation"
+    "🚀 Generate SHAP Explanation",
+    use_container_width=True
 ):
 
 
     shap_values, explainer = calculate_shap_values(
+
         model,
+
         X
+
     )
 
 
     importance = get_feature_importance(
+
         X,
+
         shap_values
+
     )
 
 
@@ -104,12 +125,20 @@ if st.button(
     ] = shap_values
 
 
+    st.session_state[
+        "shap_features"
+    ] = X
+
 
     st.success(
         "SHAP analysis completed!"
     )
 
 
+
+# =====================================================
+# RESULTS
+# =====================================================
 
 if "shap_importance" in st.session_state:
 
@@ -119,15 +148,24 @@ if "shap_importance" in st.session_state:
     ]
 
 
+    X = st.session_state[
+        "shap_features"
+    ]
+
+
+    shap_values = st.session_state[
+        "shap_values"
+    ]
+
+
     st.subheader(
-        "Top Biomarkers by SHAP"
+        "🧬 Top Biomarkers by SHAP"
     )
 
 
     st.dataframe(
-        importance.head(10)
+        importance.head(20)
     )
-
 
 
     st.subheader(
@@ -136,8 +174,11 @@ if "shap_importance" in st.session_state:
 
 
     fig1 = shap_bar_plot(
-        st.session_state["shap_values"],
+
+        shap_values,
+
         X
+
     )
 
 
@@ -153,8 +194,11 @@ if "shap_importance" in st.session_state:
 
 
     fig2 = shap_summary_plot(
-        st.session_state["shap_values"],
+
+        shap_values,
+
         X
+
     )
 
 
