@@ -5,16 +5,22 @@ import matplotlib.pyplot as plt
 
 
 
+# =====================================================
+# CALCULATE SHAP VALUES
+# =====================================================
+
 def calculate_shap_values(
         model,
         X
 ):
+
     """
     Calculate SHAP values.
 
-    Uses TreeExplainer for
-    tree-based models.
+    Supports tree models
+    like Random Forest.
     """
+
 
     explainer = shap.TreeExplainer(
         model
@@ -31,19 +37,20 @@ def calculate_shap_values(
 
 
 
+# =====================================================
+# FEATURE IMPORTANCE
+# =====================================================
 
 def get_feature_importance(
         X,
         shap_values
 ):
+
     """
-    Rank biomarkers according
-    to mean absolute SHAP value.
+    Rank genes using
+    mean absolute SHAP value.
     """
 
-
-    # Binary classification
-    # SHAP sometimes returns list
 
     if isinstance(shap_values, list):
 
@@ -56,17 +63,26 @@ def get_feature_importance(
 
 
     importance = pd.DataFrame(
+
         {
+
             "Gene": X.columns,
+
             "SHAP Importance":
                 abs(values).mean(axis=0)
+
         }
+
     )
 
 
+
     importance = importance.sort_values(
+
         by="SHAP Importance",
+
         ascending=False
+
     )
 
 
@@ -75,49 +91,14 @@ def get_feature_importance(
 
 
 
+# =====================================================
+# SHAP SUMMARY PLOT
+# =====================================================
+
 def shap_summary_plot(
         shap_values,
         X
 ):
-
-    """
-    Generate SHAP summary plot.
-    """
-
-
-    if isinstance(shap_values, list):
-
-        values = shap_values[1]
-
-    else:
-
-        values = shap_values
-
-
-
-    fig = plt.figure()
-
-
-    shap.summary_plot(
-        values,
-        X,
-        show=False
-    )
-
-
-    return fig
-
-
-
-
-def shap_bar_plot(
-        shap_values,
-        X
-):
-
-    """
-    Generate SHAP bar plot.
-    """
 
 
     if isinstance(shap_values,list):
@@ -130,14 +111,62 @@ def shap_bar_plot(
 
 
 
-    fig = plt.figure()
+    fig = plt.figure(
+        figsize=(10,6)
+    )
 
 
     shap.summary_plot(
+
         values,
+
         X,
-        plot_type="bar",
+
         show=False
+
+    )
+
+
+    return fig
+
+
+
+
+# =====================================================
+# SHAP BAR PLOT
+# =====================================================
+
+def shap_bar_plot(
+        shap_values,
+        X
+):
+
+
+    if isinstance(shap_values,list):
+
+        values = shap_values[1]
+
+    else:
+
+        values = shap_values
+
+
+
+    fig = plt.figure(
+        figsize=(10,6)
+    )
+
+
+    shap.summary_plot(
+
+        values,
+
+        X,
+
+        plot_type="bar",
+
+        show=False
+
     )
 
 
