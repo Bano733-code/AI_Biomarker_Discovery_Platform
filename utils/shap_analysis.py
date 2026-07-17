@@ -14,6 +14,12 @@ from sklearn.linear_model import LogisticRegression
 def calculate_shap_values(model, X):
     """
     Calculate SHAP values for supported models.
+
+    Supports:
+    - Random Forest
+    - Logistic Regression
+    - SHAP old API
+    - SHAP new API
     """
 
     if isinstance(model, RandomForestClassifier):
@@ -22,32 +28,66 @@ def calculate_shap_values(model, X):
 
     elif isinstance(model, LogisticRegression):
 
-        explainer = shap.LinearExplainer(model, X)
+        explainer = shap.LinearExplainer(
+            model,
+            X
+        )
 
     else:
 
-        raise Exception(
+        raise ValueError(
             f"Unsupported model type: {type(model)}"
         )
 
-    shap_values = explainer(X)
+    try:
+
+        # New SHAP API
+        shap_values = explainer(X)
+
+    except Exception:
+
+        # Older SHAP API
+        shap_values = explainer.shap_values(X)
 
     return shap_values, explainer
 
 
 # =====================================================
-# EXTRACT SHAP ARRAY
+# EXTRACT SHAP VALUES
 # =====================================================
 
 def extract_values(shap_values):
     """
-    Extract raw SHAP values regardless of SHAP version.
+    Convert every SHAP output format into
+    a (samples × features) NumPy array.
     """
 
-    # New SHAP API
-    if hasattr(shap_values, "values"):
+    # ------------------------------------
+    # OLD SHAP
+    # list(class0,class1)
+    # ------------------------------------
+
+    if isinstance(shap_values, list):
+
+        if len(shap_values) == 2:
+
+            values = shap_values[1]
+
+        else:
+
+            values = shap_values[0]
+
+    # ------------------------------------
+    # NEW SHAP Explanation object
+    # ------------------------------------
+
+    elif hasattr(shap_values, "values"):
 
         values = shap_values.values
+
+    # ------------------------------------
+    # Already ndarray
+    # ------------------------------------
 
     else:
 
@@ -55,12 +95,21 @@ def extract_values(shap_values):
 
     values = np.asarray(values)
 
-    # Binary classifier may return:
+    # ------------------------------------
+    # Shape handling
+    # ------------------------------------
+
     # (samples, features, classes)
 
     if values.ndim == 3:
 
         values = values[:, :, 1]
+
+    # (features,)
+
+    elif values.ndim == 1:
+
+        values = values.reshape(1, -1)
 
     return values
 
@@ -69,22 +118,34 @@ def extract_values(shap_values):
 # FEATURE IMPORTANCE
 # =====================================================
 
-def get_feature_importance(X, shap_values):
+def get_feature_importance(
+    X,
+    shap_values
+):
     """
-    Calculate mean absolute SHAP importance.
+    Compute mean absolute SHAP value
+    for each gene.
     """
 
-    values = extract_values(shap_values)
+    values = extract_values(
+        shap_values
+    )
 
-    importance = np.abs(values).mean(axis=0)
+    importance = np.abs(
+        values
+    ).mean(axis=0)
 
-    importance_df = pd.DataFrame({
+    importance_df = pd.DataFrame(
 
-        "Gene": X.columns,
+        {
 
-        "SHAP Importance": importance
+            "Gene": X.columns,
 
-    })
+            "SHAP Importance": importance
+
+        }
+
+    )
 
     importance_df = importance_df.sort_values(
 
@@ -92,20 +153,32 @@ def get_feature_importance(X, shap_values):
 
         ascending=False
 
-    )
+    ).reset_index(drop=True)
 
     return importance_df
 
 
 # =====================================================
-# SUMMARY PLOT
+# SHAP SUMMARY PLOT
 # =====================================================
 
-def shap_summary_plot(shap_values, X):
+def shap_summary_plot(
+    shap_values,
+    X
+):
+    """
+    Generate SHAP summary plot.
+    """
 
-    values = extract_values(shap_values)
+    values = extract_values(
+        shap_values
+    )
 
-    plt.figure(figsize=(10,6))
+    plt.close("all")
+
+    fig = plt.figure(
+        figsize=(10, 6)
+    )
 
     shap.summary_plot(
 
@@ -117,18 +190,32 @@ def shap_summary_plot(shap_values, X):
 
     )
 
-    return plt.gcf()
+    plt.tight_layout()
+
+    return fig
 
 
 # =====================================================
-# BAR PLOT
+# SHAP BAR PLOT
 # =====================================================
 
-def shap_bar_plot(shap_values, X):
+def shap_bar_plot(
+    shap_values,
+    X
+):
+    """
+    Generate SHAP feature importance bar plot.
+    """
 
-    values = extract_values(shap_values)
+    values = extract_values(
+        shap_values
+    )
 
-    plt.figure(figsize=(10,6))
+    plt.close("all")
+
+    fig = plt.figure(
+        figsize=(10, 6)
+    )
 
     shap.summary_plot(
 
@@ -142,4 +229,45 @@ def shap_bar_plot(shap_values, X):
 
     )
 
-    return plt.gcf()
+    plt.tight_layout()
+
+    return fig
+
+
+# =====================================================
+# LOCAL EXPLANATION
+# =====================================================
+
+def explain_single_sample(
+    shap_values,
+    X,
+    sample_index=0
+):
+    """
+    Return SHAP values for one sample.
+    Useful for waterfall or force plots.
+    """
+
+    values = extract_values(
+        shap_values
+    )
+
+    return pd.DataFrame(
+
+        {
+
+            "Gene": X.columns,
+
+            "SHAP Value": values[sample_index]
+
+        }
+
+    ).sort_values(
+
+        by="SHAP Value",
+
+        key=np.abs,
+
+        ascending=False
+
+    ).reset_index(drop=True)
