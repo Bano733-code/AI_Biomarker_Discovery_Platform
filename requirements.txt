@@ -9,5 +9,6 @@ shap
 xgboost
 gseapy
 reportlab
+GEOparse
 requests
 joblib
