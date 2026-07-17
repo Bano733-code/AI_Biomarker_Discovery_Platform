@@ -124,7 +124,7 @@ def download_geo_dataset(accession: str, cache_dir: str = "data/geo_cache") -> A
         logger.info("Downloading: %s -> %s", accession, cache_dir)
 
     try:
-        gse = GEOparse.get_GEO(geo=accession, destdir=str(cache_path), silent=True)
+        gse = GEOparse.get_GEO(geo=accession, destdir=str(cache_path), silent=True,how="full")
     except Exception as exc:
         raise GeoDownloadError(
             f"Failed to download/parse GEO accession '{accession}': {exc}"
