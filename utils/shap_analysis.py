@@ -1,108 +1,92 @@
+import numpy as np
 import pandas as pd
 import shap
-
 import matplotlib.pyplot as plt
 
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-
+from sklearn.linear_model import LogisticRegression
 
 
 # =====================================================
 # CALCULATE SHAP VALUES
 # =====================================================
 
-def calculate_shap_values(
-        model,
-        X
-):
-
+def calculate_shap_values(model, X):
     """
-    Calculate SHAP values based on model type.
+    Calculate SHAP values for supported models.
     """
 
+    if isinstance(model, RandomForestClassifier):
 
-    # Random Forest
+        explainer = shap.TreeExplainer(model)
 
-    if isinstance(
-        model,
-        RandomForestClassifier
-    ):
+    elif isinstance(model, LogisticRegression):
 
-        explainer = shap.TreeExplainer(
-            model
-        )
-
-
-    # Logistic Regression
-
-    elif isinstance(
-        model,
-        LogisticRegression
-    ):
-
-        explainer = shap.LinearExplainer(
-            model,
-            X
-        )
-
+        explainer = shap.LinearExplainer(model, X)
 
     else:
 
         raise Exception(
-            "Unsupported model for SHAP"
+            f"Unsupported model type: {type(model)}"
         )
 
-
-
-    shap_values = explainer.shap_values(
-        X
-    )
-
+    shap_values = explainer(X)
 
     return shap_values, explainer
 
 
+# =====================================================
+# EXTRACT SHAP ARRAY
+# =====================================================
+
+def extract_values(shap_values):
+    """
+    Extract raw SHAP values regardless of SHAP version.
+    """
+
+    # New SHAP API
+    if hasattr(shap_values, "values"):
+
+        values = shap_values.values
+
+    else:
+
+        values = shap_values
+
+    values = np.asarray(values)
+
+    # Binary classifier may return:
+    # (samples, features, classes)
+
+    if values.ndim == 3:
+
+        values = values[:, :, 1]
+
+    return values
 
 
 # =====================================================
 # FEATURE IMPORTANCE
 # =====================================================
 
-def get_feature_importance(
-        X,
-        shap_values
-):
+def get_feature_importance(X, shap_values):
+    """
+    Calculate mean absolute SHAP importance.
+    """
 
+    values = extract_values(shap_values)
 
-    if isinstance(
-        shap_values,
-        list
-    ):
+    importance = np.abs(values).mean(axis=0)
 
-        values = shap_values[1]
+    importance_df = pd.DataFrame({
 
-    else:
+        "Gene": X.columns,
 
-        values = shap_values
+        "SHAP Importance": importance
 
+    })
 
-
-    importance = pd.DataFrame(
-
-        {
-
-            "Gene": X.columns,
-
-            "SHAP Importance":
-            abs(values).mean(axis=0)
-
-        }
-
-    )
-
-
-    importance = importance.sort_values(
+    importance_df = importance_df.sort_values(
 
         by="SHAP Importance",
 
@@ -110,39 +94,18 @@ def get_feature_importance(
 
     )
 
-
-    return importance
-
-
+    return importance_df
 
 
 # =====================================================
 # SUMMARY PLOT
 # =====================================================
 
-def shap_summary_plot(
-        shap_values,
-        X
-):
+def shap_summary_plot(shap_values, X):
 
+    values = extract_values(shap_values)
 
-    if isinstance(
-        shap_values,
-        list
-    ):
-
-        values = shap_values[1]
-
-    else:
-
-        values = shap_values
-
-
-
-    fig = plt.figure(
-        figsize=(10,6)
-    )
-
+    plt.figure(figsize=(10,6))
 
     shap.summary_plot(
 
@@ -154,39 +117,18 @@ def shap_summary_plot(
 
     )
 
-
-    return fig
-
-
+    return plt.gcf()
 
 
 # =====================================================
 # BAR PLOT
 # =====================================================
 
-def shap_bar_plot(
-        shap_values,
-        X
-):
+def shap_bar_plot(shap_values, X):
 
+    values = extract_values(shap_values)
 
-    if isinstance(
-        shap_values,
-        list
-    ):
-
-        values = shap_values[1]
-
-    else:
-
-        values = shap_values
-
-
-
-    fig = plt.figure(
-        figsize=(10,6)
-    )
-
+    plt.figure(figsize=(10,6))
 
     shap.summary_plot(
 
@@ -200,5 +142,4 @@ def shap_bar_plot(
 
     )
 
-
-    return fig
+    return plt.gcf()
