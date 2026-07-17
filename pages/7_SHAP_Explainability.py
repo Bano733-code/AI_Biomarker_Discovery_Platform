@@ -99,6 +99,13 @@ if st.button(
 
     shap_values, explainer = calculate_shap_values(
 
+        st.write("Model:", type(model))
+    
+        if hasattr(shap_values, "values"):
+            st.write("SHAP values shape:", shap_values.values.shape)
+        else:
+            import numpy as np
+            st.write("SHAP values shape:", np.array(shap_values).shape)
         model,
 
         X
