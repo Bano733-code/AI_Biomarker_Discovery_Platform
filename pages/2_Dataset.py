@@ -7,6 +7,9 @@ from utils.data_loader import (
     validate_expression_data,
     validate_metadata,
 )
+from utils.geo_downloader import (
+    load_geo_dataset
+)
 
 st.title("📂 Dataset Upload")
 
@@ -20,20 +23,50 @@ Upload a **Gene Expression Matrix** together with its
 # ======================================================
 
 option = st.radio(
-    "Choose Dataset Source",
+   "Choose Dataset Source",
     [
+        "📥 Download GEO Dataset",
         "🧪 Use Example Dataset",
-        "📤 Upload Your Own Dataset"
+        "📂 Upload Your Own Dataset"
     ]
 )
-
 expression_df = None
 metadata_df = None
 
 # ======================================================
 # EXAMPLE DATASET
 # ======================================================
+if option == "📥 Download GEO Dataset":
 
+    st.subheader("Download from GEO")
+
+    accession = st.text_input(
+        "Enter GEO Accession",
+        placeholder="Example: GSE113994"
+    )
+
+    if st.button("Download Dataset"):
+
+        with st.spinner("Downloading GEO dataset..."):
+
+            try:
+
+                expression_df, metadata_df, report = load_geo_dataset(
+                    accession
+                )
+
+                st.success("Dataset downloaded successfully!")
+
+                st.session_state["expression_data"] = expression_df
+                st.session_state["metadata"] = metadata_df
+
+                st.write("Validation Report")
+
+                st.json(report)
+
+            except Exception as e:
+
+                st.error(str(e))
 if option == "🧪 Use Example Dataset":
 
     expression_path = "data/example_expression.csv"
@@ -54,7 +87,7 @@ if option == "🧪 Use Example Dataset":
 # USER DATASET
 # ======================================================
 
-else:
+elif option == "📂 Upload Your Own Dataset":
 
     expression_file = st.file_uploader(
         "Upload Expression Matrix (.csv)",
@@ -151,27 +184,22 @@ if expression_df is not None and metadata_df is not None:
 
     st.header("✅ Validation Report")
 
-    expression_report = validate_expression_data(
-        expression_df
-    )
-
-    metadata_report = validate_metadata(
-        metadata_df,
-        expression_df
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.subheader("Expression Matrix")
-
+    if option == "📥 Download GEO Dataset":
+    
+        st.json(report)
+    
+    else:
+    
+        expression_report = validate_expression_data(
+            expression_df
+        )
+    
+        metadata_report = validate_metadata(
+            metadata_df,
+            expression_df
+        )
+    
         st.json(expression_report)
-
-    with col2:
-
-        st.subheader("Metadata")
-
         st.json(metadata_report)
 
     # ------------------------
