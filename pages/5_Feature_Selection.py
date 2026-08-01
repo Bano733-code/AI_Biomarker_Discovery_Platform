@@ -1,5 +1,5 @@
 import streamlit as st
-
+import os
 from utils.feature_selection import (
     prepare_features,
     anova_selection,
@@ -56,13 +56,34 @@ if st.button("Run Feature Selection"):
         mi,
         rf
     )
-
+# Save in session
     st.session_state["selected_biomarkers"] = final
-
+    
+    # Create results folder
+    os.makedirs("results", exist_ok=True)
+    
+    # Save biomarkers
+    final.to_csv(
+        "results/selected_biomarkers.csv",
+        index=False
+    )
+    
+    # Save path for report generation
+    st.session_state["biomarker_file"] = (
+        "results/selected_biomarkers.csv"
+    )
     st.success("Feature selection completed!")
 
     st.subheader("Top Ranked Biomarkers")
 
     st.dataframe(
         final.head(20)
+    )
+    st.success("Biomarker table saved successfully.")
+    
+    st.download_button(
+        label="📥 Download Biomarker Ranking",
+        data=final.to_csv(index=False),
+        file_name="Selected_Biomarkers.csv",
+        mime="text/csv"
     )
