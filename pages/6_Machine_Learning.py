@@ -227,8 +227,7 @@ if "model_metrics" in st.session_state:
     st.write(
         metrics["Confusion Matrix"]
     )
-    
-        if "Classification Report" in metrics:
+    if "Classification Report" in metrics:
     
         st.subheader("Classification Report")
     
