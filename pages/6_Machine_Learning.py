@@ -106,15 +106,15 @@ if st.button(
         X_test,
         y_test
     )
-    # Save in Session State
+    # Save model
+    save_model(model)
+    
+    # Save session state
     st.session_state["trained_model"] = model
     st.session_state["model_metrics"] = metrics
     
-    # Create results folder
-    os.makedirs("results", exist_ok=True)
-    
-    # Save metrics
-    metrics_to_save = {}
+    # Save metrics to JSON
+    metrics_json = {}
     
     for key, value in metrics.items():
     
@@ -123,7 +123,7 @@ if st.button(
             "Confusion Matrix"
         ]:
     
-            metrics_to_save[key] = value
+            metrics_json[key] = value
     
     with open(
         "results/model_metrics.json",
@@ -131,7 +131,7 @@ if st.button(
     ) as f:
     
         json.dump(
-            metrics_to_save,
+            metrics_json,
             f,
             indent=4
         )
@@ -150,28 +150,19 @@ if st.button(
     # Save Confusion Matrix
     if "Confusion Matrix" in metrics:
     
-        cm = pd.DataFrame(
+        cm_df = pd.DataFrame(
             metrics["Confusion Matrix"]
         )
     
-        cm.to_csv(
+        cm_df.to_csv(
             "results/confusion_matrix.csv",
             index=False
         )
     
-    # Save paths for report generation
-    st.session_state["metrics_file"] = (
-        "results/model_metrics.json"
-    )
-    
-    st.session_state["classification_report_file"] = (
-        "results/classification_report.csv"
-    )
-    
-    st.session_state["confusion_matrix_file"] = (
-        "results/confusion_matrix.csv"
-    )
-    save_model(model)
+    # Save file paths
+    st.session_state["metrics_file"] = "results/model_metrics.json"
+    st.session_state["classification_report_file"] = "results/classification_report.csv"
+    st.session_state["confusion_matrix_file"] = "results/confusion_matrix.csv"
 
     st.success(
         "✅ Model trained successfully!"
@@ -244,18 +235,7 @@ if "model_metrics" in st.session_state:
         st.dataframe(
             metrics["Classification Report"]
         )
-    st.download_button(
-    "📥 Download Model Metrics",
-    data=json.dumps(
-        metrics_to_save,
-        indent=4
-    ),
-    file_name="model_metrics.json",
-    mime="application/json"
-    )
-
-    if "Classification Report" in metrics:
-    
+     
         st.download_button(
             "📥 Download Classification Report",
             data=report_df.to_csv(),
