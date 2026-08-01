@@ -145,9 +145,10 @@ Generate a downloadable report containing:
 - Biological interpretation
 
 ![Report](assets/report_generation.png)
-![Report](assets/report_generation1.png)
-
-
+<p align="center">
+  <img src="assets/report_generation1.png" width="900">
+</p>
+---
 ## 🧪 GEO Dataset Integration
 
 The platform can automatically:
