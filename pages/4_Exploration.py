@@ -101,10 +101,10 @@ st.plotly_chart(
     cluster,
     use_container_width=True,
 )
-fig.write_image("reports/pca_plot.png")
+fig.write_image("reports/pca_plot.png" , engine="kaleido")
 heatmap.savefig(
     "reports/heatmap.png",
     dpi=300,
     bbox_inches="tight"
 )
-cluster.write_image("reports/clustering.png")
+cluster.write_image("reports/clustering.png", engine="kaleido")
