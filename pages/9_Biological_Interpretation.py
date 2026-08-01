@@ -105,6 +105,12 @@ if "gene_annotations" in st.session_state:
 if st.button(
     "Run Pathway Enrichment"
 ):
+    pathways = pathway_enrichment(
+    top_genes
+    )
+
+    st.session_state["pathways"] = pathways
+
     # Create results folder
     os.makedirs("results", exist_ok=True)
     
@@ -113,14 +119,6 @@ if st.button(
         "results/pathway_enrichment.csv",
         index=False
     )
-
-    pathways = pathway_enrichment(
-        top_genes
-    )
-
-    st.session_state[
-        "pathways"
-    ] = pathways
     # Save path for report generation
     st.session_state[
         "pathway_file"
