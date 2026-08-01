@@ -227,49 +227,49 @@ if "model_metrics" in st.session_state:
     st.write(
         metrics["Confusion Matrix"]
     )
-
-    if "Classification Report" in metrics:
-
-    st.subheader("Classification Report")
-
-    # Create dataframe again for display + download
-    report_df = pd.DataFrame(
-        metrics["Classification Report"]
-    ).transpose()
-
-
-    st.dataframe(
-        report_df
-    )
-
-
-    # Ensure results folder exists
-    os.makedirs(
-        "results",
-        exist_ok=True
-    )
-
-
-    # Save button for report generator
-    if st.button(
-        "💾 Save Classification Report",
-        use_container_width=True
-    ):
-
-        report_df.to_csv(
-            "results/classification_report.csv",
-            index=True
+    
+        if "Classification Report" in metrics:
+    
+        st.subheader("Classification Report")
+    
+        # Create dataframe again for display + download
+        report_df = pd.DataFrame(
+            metrics["Classification Report"]
+        ).transpose()
+    
+    
+        st.dataframe(
+            report_df
         )
-
-        st.success(
-            "Classification report saved for PDF report generation."
+    
+    
+        # Ensure results folder exists
+        os.makedirs(
+            "results",
+            exist_ok=True
         )
-
-
-    # Download button
-    st.download_button(
-        "📥 Download Classification Report",
-        data=report_df.to_csv(),
-        file_name="classification_report.csv",
-        mime="text/csv"
-    )
+    
+    
+        # Save button for report generator
+        if st.button(
+            "💾 Save Classification Report",
+            use_container_width=True
+        ):
+    
+            report_df.to_csv(
+                "results/classification_report.csv",
+                index=True
+            )
+    
+            st.success(
+                "Classification report saved for PDF report generation."
+            )
+    
+    
+        # Download button
+        st.download_button(
+            "📥 Download Classification Report",
+            data=report_df.to_csv(),
+            file_name="classification_report.csv",
+            mime="text/csv"
+        )
