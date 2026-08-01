@@ -1,5 +1,10 @@
 # 🧬 AI Biomarker Discovery Platform
 
+![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)
+![Streamlit](https://img.shields.io/badge/Streamlit-App-red.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)
+
 An end-to-end **AI-powered biomarker discovery platform** that integrates bioinformatics, machine learning, and explainable AI to identify potential disease-associated biomarkers from gene expression data.
 
 The platform allows researchers to upload or automatically retrieve public gene expression datasets, perform preprocessing, train machine learning models, interpret predictions using SHAP explainability, and generate biological insights.
@@ -12,36 +17,15 @@ Finding reliable biomarkers from high-dimensional genomic data is challenging be
 
 This project aims to build an automated workflow:
 
-```
-Gene Expression Data
-          |
-          ↓
-Data Preprocessing
-          |
-          ↓
-Exploratory Analysis
-          |
-          ↓
-Feature Selection
-          |
-          ↓
-Machine Learning Models
-          |
-          ↓
-Explainable AI (SHAP)
-          |
-          ↓
-Biomarker Ranking
-          |
-          ↓
-Biological Interpretation
-```
+![Pipeline Diagram](assets/pipeline_diagram.png)
 
 ---
 
 # ✨ Features
 
 ## 📂 Dataset Management
+
+![Dataset Upload Screenshot](assets/dataset_upload_screenshot.png)
 
 Supports:
 
@@ -73,6 +57,8 @@ Pipeline includes:
 
 ## 🔍 Exploratory Analysis
 
+![PCA and Clustering Plot](assets/pca_clustering_plot.png)
+
 Includes:
 
 - Gene expression visualization
@@ -98,6 +84,8 @@ Gene Expression → Disease State
 ---
 
 ## 🔬 Explainable AI
+
+![SHAP Summary Plot](assets/shap_summary_plot.png)
 
 Uses SHAP (SHapley Additive exPlanations) to understand model decisions.
 
@@ -134,7 +122,6 @@ Metadata
         ↓
 Machine Learning Pipeline
 ```
-
 ---
 
 # 🏗️ Project Architecture
@@ -146,13 +133,16 @@ AI_Biomarker_Discovery/
 ├── app.py
 │
 ├── pages/
-│   ├── 1_Dataset.py
-│   ├── 2_Preprocessing.py
-│   ├── 3_Exploration.py
-│   ├── 4_Feature_Selection.py
-│   ├── 5_Machine_Learning.py
-│   ├── 6_SHAP_Explainability.py
-│   └── 7_Report.py
+│   ├── 1_Home.py
+│   ├── 2_Dataset.py
+│   ├── 3_Preprocessing.py
+│   ├── 4_Exploration.py
+│   ├── 5_Feature_Selection.py
+│   ├── 6_Machine_Learning.py
+│   ├── 7_SHAP_Explainability.py
+│   ├── 8_Biomarker_Results.py
+│   ├── 9_Biological_Interpretation.py
+│   └── 10_Report.py
 │
 ├── utils/
 │   ├── data_loader.py
@@ -161,15 +151,17 @@ AI_Biomarker_Discovery/
 │   ├── models.py
 │   ├── shap_analysis.py
 │   ├── geo_downloader.py
+│   ├── visualization.py
+│   ├── biology.py
+│   ├── biomarker_ranking.py
 │   └── report.py
 │
 ├── data/
-│
+├── report.py/
 ├── requirements.txt
 │
 └── README.md
 ```
-
 ---
 
 # 🛠️ Tech Stack
@@ -327,6 +319,8 @@ for discovering interpretable biomarkers from high-dimensional biological datase
 ---
 
 # 👩‍💻 Author
+
+![Author Photo](assets/author_photo.png)
 
 **Bano Rani**
 
