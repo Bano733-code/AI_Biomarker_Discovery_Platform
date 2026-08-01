@@ -12,3 +12,4 @@ reportlab
 GEOparse
 requests
 joblib
+kaleido
