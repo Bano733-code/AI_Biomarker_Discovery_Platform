@@ -12,4 +12,4 @@ reportlab
 GEOparse
 requests
 joblib
-kaleido
+kaleido==0.2.1
