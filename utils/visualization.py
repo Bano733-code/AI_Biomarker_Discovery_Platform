@@ -6,7 +6,8 @@ from sklearn.preprocessing import StandardScaler
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+from scipy.cluster.hierarchy import linkage
+import seaborn as sns
 
 def dataset_statistics(expression_df):
 
@@ -118,7 +119,6 @@ def correlation_heatmap(expression_df):
 
     return fig
 
-
 def sample_clustering(expression_df):
 
     expression = prepare_expression_data(
@@ -127,10 +127,16 @@ def sample_clustering(expression_df):
 
     correlation = expression.corr()
 
-    fig = px.imshow(
+    cluster = sns.clustermap(
         correlation,
-        text_auto=True,
-        title="Sample Clustering",
+        cmap="coolwarm",
+        figsize=(10, 8),
+        linewidths=0.5
     )
 
-    return fig
+    cluster.fig.suptitle(
+        "Sample Clustering",
+        fontsize=16
+    )
+
+    return cluster.fig
