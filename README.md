@@ -25,7 +25,7 @@ This project aims to build an automated workflow:
 
 ## 📂 Dataset Management
 
-![Dataset Upload Screenshot](assets/dataset_upload_screenshot.png)
+![Dataset Upload Screenshot](assets/dataset_upload.png)
 
 Supports:
 
