@@ -121,22 +121,18 @@ def correlation_heatmap(expression_df):
 
 def sample_clustering(expression_df):
 
-    expression = prepare_expression_data(
-        expression_df
-    )
+    expression = prepare_expression_data(expression_df)
 
     correlation = expression.corr()
 
-    cluster = sns.clustermap(
+    fig, ax = plt.subplots(figsize=(10,8))
+
+    sns.heatmap(
         correlation,
-        cmap="coolwarm",
-        figsize=(10, 8),
-        linewidths=0.5
+        cmap="viridis",
+        ax=ax
     )
 
-    cluster.fig.suptitle(
-        "Sample Clustering",
-        fontsize=16
-    )
+    ax.set_title("Sample Clustering")
 
-    return cluster.fig
+    return fig
