@@ -53,11 +53,11 @@ Pipeline includes:
 - Gene feature handling
 - Dataset quality checks
 
+![Preprocessing](assets/preprocessing.png)
+
 ---
 
 ## 🔍 Exploratory Analysis
-
-![PCA and Clustering Plot](assets/pca_clustering_plot.png)
 
 Includes:
 
@@ -65,6 +65,8 @@ Includes:
 - PCA analysis
 - Sample clustering
 - Distribution analysis
+
+![PCA and Clustering Plot](assets/pca_clustering_plot.png)
 
 ---
 
@@ -80,12 +82,11 @@ The models learn patterns between:
 ```
 Gene Expression → Disease State
 ```
+![Machine Learning](assets/machine_learning.png)
 
 ---
 
 ## 🔬 Explainable AI
-
-![SHAP Summary Plot](assets/shap_summary_plot.png)
 
 Uses SHAP (SHapley Additive exPlanations) to understand model decisions.
 
@@ -96,7 +97,54 @@ Provides:
 - SHAP summary plots
 - SHAP ranking of important genes
 
+![SHAP Summary Plot](assets/shap_summary_plot.png)
+
 ---
+
+## 🧪 Biomarker Discovery
+
+The platform ranks candidate biomarkers using machine learning feature importance and SHAP explainability.
+
+Outputs include:
+
+- Ranked biomarkers
+- Feature importance
+- Expression comparison
+- Biomarker confidence scores
+
+![Biomarkers](assets/biomarker_results.png)
+
+---
+
+## 🌿 Biological Interpretation
+
+Interpret discovered biomarkers using biological knowledge.
+
+Future support includes:
+
+- Gene Ontology (GO)
+- KEGG Pathways
+- Functional Annotation
+- Disease Association
+
+![Biological Interpretation](assets/biology.png)
+
+---
+
+## 📄 Automated Research Report
+
+Generate a downloadable report containing:
+
+- Dataset summary
+- Quality control statistics
+- PCA visualization
+- Differentially expressed genes
+- Machine learning performance
+- SHAP explainability
+- Ranked biomarker candidates
+- Biological interpretation
+
+![Report](assets/report_generation.png)
 
 ## 🧪 GEO Dataset Integration
 
@@ -111,16 +159,25 @@ The platform can automatically:
 Example:
 
 ```
-GSE2034
-        |
-        ↓
+GEO Accession
+       │
+       ▼
+Automatic Download
+       │
+       ▼
 Expression Matrix
-        |
-        ↓
-Metadata
-        |
-        ↓
-Machine Learning Pipeline
+       │
+       ▼
+Automatic Metadata Extraction
+       │
+       ▼
+Preprocessing
+       │
+       ▼
+Machine Learning
+       │
+       ▼
+Biomarker Discovery
 ```
 ---
 
@@ -319,8 +376,6 @@ for discovering interpretable biomarkers from high-dimensional biological datase
 ---
 
 # 👩‍💻 Author
-
-![Author Photo](assets/author_photo.png)
 
 **Bano Rani**
 
