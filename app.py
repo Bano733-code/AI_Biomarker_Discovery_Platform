@@ -17,26 +17,33 @@ st.markdown(
     This platform uses Machine Learning and Explainable AI
     to identify potential biomarkers from gene expression datasets.
 
-    ### Pipeline
-
-    Dataset Upload
-    ↓
-    Preprocessing
-    ↓
-    Exploration
-    ↓
-    Feature Selection
-    ↓
-    Machine Learning
-    ↓
-    SHAP Explainability
-    ↓
-    Biomarker Discovery
-    ↓
-    Report Generation
-
-    """
-)
+```text
+        📥 Upload GEO Dataset
+                │
+                ▼
+        🧹 Preprocessing
+                │
+                ▼
+        📊 Exploratory Analysis
+                │
+                ▼
+        🧬 Differential Expression
+                │
+                ▼
+        🎯 Feature Selection
+                │
+                ▼
+        🤖 Machine Learning
+                │
+                ▼
+        🔍 SHAP Explainability
+                │
+                ▼
+        🧪 Biomarker Discovery
+                │
+                ▼
+        📄 Automated Report
+""")
 
 
 st.info(
