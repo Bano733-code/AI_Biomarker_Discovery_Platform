@@ -337,36 +337,11 @@ if st.button(
 
         dataset_info,
 
-        qc_results,
-
-        pca_plot,
-
-        heatmap_plot,
-
-        clustering_plot,
-
-        deg_results,
-
-        feature_results,
-
         model_metrics,
-
-        classification_report,
-
-        confusion_matrix,
-
-        shap_results,
-
-        shap_summary_plot,
-
-        shap_bar_plot,
 
         final_biomarkers,
 
-        gene_annotations,
-
-        pathway_results
-
+        shap_results
     )
 
 
