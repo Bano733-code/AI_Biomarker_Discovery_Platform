@@ -1,5 +1,6 @@
 import streamlit as st
-
+import os
+import pandas as pd
 from utils.preprocessing import (
     remove_duplicate_genes,
     handle_missing_values,
@@ -169,6 +170,44 @@ if st.button(
 
     st.session_state["processed_data"] = processed_df
 
+       # Create results folder
+    os.makedirs("results", exist_ok=True)
+
+    # Save processed dataset
+    processed_df.to_csv(
+        "results/processed_dataset.csv",
+        index=False
+    )
+
+    # Create preprocessing summary
+    summary = {
+        "Metric": [
+            "Total Genes",
+            "Total Samples",
+            "Groups",
+            "Missing Values",
+            "Duplicate Genes"
+        ],
+        "Value": [
+            processed_df.shape[0],
+            processed_df.shape[1]-1,
+            metadata_df["Group"].nunique(),
+            processed_df.isnull().sum().sum(),
+            processed_df.duplicated().sum()
+        ]
+    }
+
+    summary_df = pd.DataFrame(summary)
+
+    summary_df.to_csv(
+        "results/dataset_statistics.csv",
+        index=False
+    )
+
+    # Save paths
+    st.session_state["processed_dataset_file"] = "results/processed_dataset.csv"
+    st.session_state["dataset_statistics_file"] = "results/dataset_statistics.csv"
+
     st.success(
-        "Processed dataset saved successfully!"
+        "✅ Processed dataset saved successfully."
     )
