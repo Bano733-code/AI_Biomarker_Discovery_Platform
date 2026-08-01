@@ -172,17 +172,15 @@ st.header("🧬 Sample Clustering")
 
 cluster = sample_clustering(expression_df)
 
-st.session_state["cluster_plot"] = cluster
+st.pyplot(cluster)
 
-# Display clustering
-st.plotly_chart(
-    cluster,
-    use_container_width=True
+cluster.savefig(
+    "results/clustering.png",
+    dpi=300,
+    bbox_inches="tight"
 )
 
-st.info(
-    "Clustering visualization generated successfully."
-)
+plt.close(cluster)
 
 st.success(
     "✅ EDA results have been saved successfully."
