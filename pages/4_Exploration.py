@@ -65,11 +65,17 @@ st.write(
 )
 
 fig = create_pca_plot(pca_df)
+# Save PCA results
+st.session_state["pca_results"] = pca_df
+st.session_state["pca_variance"] = variance
+st.session_state["pca_plot"] = fig
 
 st.plotly_chart(
     fig,
     use_container_width=True,
 )
+
+
 
 # ----------------------------
 # Correlation Heatmap
@@ -89,9 +95,16 @@ st.header("Sample Clustering")
 
 cluster = sample_clustering(expression_df)
 
-
+st.session_state["cluster_plot"] = cluster
 
 st.plotly_chart(
     cluster,
     use_container_width=True,
 )
+fig.write_image("reports/pca_plot.png")
+heatmap.savefig(
+    "reports/heatmap.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+cluster.write_image("reports/clustering.png")
