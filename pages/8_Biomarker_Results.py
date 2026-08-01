@@ -1,5 +1,5 @@
 import streamlit as st
-
+import os
 from utils.biomarker_ranking import (
     combine_biomarker_scores,
     get_top_biomarkers
@@ -54,7 +54,20 @@ final_results = combine_biomarker_scores(
     feature_results,
     shap_results
 )
+# Create results folder
+os.makedirs("results", exist_ok=True)
 
+# Save complete biomarker ranking
+final_results.to_csv(
+    "results/final_biomarker_ranking.csv",
+    index=False
+)
+
+# Save for report generation
+st.session_state["final_biomarkers"] = final_results
+st.session_state["final_biomarker_file"] = (
+    "results/final_biomarker_ranking.csv"
+)
 
 
 st.session_state[
@@ -84,6 +97,14 @@ top10 = get_top_biomarkers(
     10
 )
 
+top10.to_csv(
+    "results/top10_biomarkers.csv",
+    index=False
+)
+
+st.session_state["top10_file"] = (
+    "results/top10_biomarkers.csv"
+)
 
 st.dataframe(
     top10
@@ -106,7 +127,14 @@ top20 = get_top_biomarkers(
     20
 )
 
+top20.to_csv(
+    "results/top20_biomarkers.csv",
+    index=False
+)
 
+st.session_state["top20_file"] = (
+    "results/top20_biomarkers.csv"
+)
 st.dataframe(
     top20
 )
