@@ -1,15 +1,13 @@
 import os
 import streamlit as st
-
+import pandas as pd
 
 from utils.report import generate_report
-
 
 
 st.title(
     "📄 Automated Research Report"
 )
-
 
 
 # =====================================================
@@ -27,72 +25,18 @@ if "processed_data" not in st.session_state:
 
 
 
-if "selected_biomarkers" not in st.session_state:
-
-    st.warning(
-        "Biomarker results not found. Please complete feature selection first."
-    )
-
-    st.stop()
-
-
-
-# =====================================================
-# LOAD DATA
-# =====================================================
-
-
 expression_df = st.session_state[
     "processed_data"
 ]
 
 
-biomarkers = st.session_state[
-    "selected_biomarkers"
-]
-
-
-
-# Optional ML results
-
-if "model_metrics" in st.session_state:
-
-    model_metrics = st.session_state[
-        "model_metrics"
-    ]
-
-else:
-
-    model_metrics = None
-
-
-
-# Optional SHAP results
-
-if "shap_importance" in st.session_state:
-
-    shap_results = st.session_state[
-        "shap_importance"
-    ]
-
-else:
-
-    shap_results = None
-
-
 
 # =====================================================
-# REPORT PREVIEW
+# LOAD AVAILABLE RESULTS
 # =====================================================
 
 
-st.header(
-    "🔬 AI Biomarker Discovery Summary"
-)
-
-
-
-# Dataset information
+# Dataset summary
 
 dataset_info = {
 
@@ -106,8 +50,40 @@ dataset_info = {
 
 
 
-st.subheader(
-    "Dataset Information"
+# ML Results
+
+model_metrics = st.session_state.get(
+    "model_metrics",
+    None
+)
+
+
+
+# Biomarkers
+
+final_biomarkers = st.session_state.get(
+    "final_biomarkers",
+    None
+)
+
+
+
+# SHAP
+
+shap_results = st.session_state.get(
+    "shap_importance",
+    None
+)
+
+
+
+# =====================================================
+# REPORT PREVIEW
+# =====================================================
+
+
+st.header(
+    "🔬 AI Biomarker Discovery Summary"
 )
 
 
@@ -135,92 +111,66 @@ with col2:
 
 
 # =====================================================
-# BIOMARKER RESULTS
+# SHOW AVAILABLE RESULTS
 # =====================================================
 
 
-st.subheader(
-    "🧬 Top Biomarkers"
-)
+if final_biomarkers is not None:
 
+    st.subheader(
+        "🧬 Top Biomarkers"
+    )
 
+    st.dataframe(
+        final_biomarkers.head(10)
+    )
 
-st.dataframe(
-
-    biomarkers.head(10)
-
-)
-
-
-
-# =====================================================
-# ML RESULTS
-# =====================================================
 
 
 if model_metrics is not None:
-
 
     st.subheader(
         "🤖 Machine Learning Performance"
     )
 
 
-    col1, col2, col3 = st.columns(3)
-
+    col1,col2,col3 = st.columns(3)
 
 
     with col1:
 
         st.metric(
-
             "Accuracy",
-
             round(
                 model_metrics["Accuracy"],
                 3
             )
-
         )
-
 
 
     with col2:
 
         st.metric(
-
             "F1 Score",
-
             round(
                 model_metrics["F1 Score"],
                 3
             )
-
         )
-
 
 
     with col3:
 
-
-        if model_metrics["ROC-AUC"] is not None:
+        if model_metrics["ROC-AUC"]:
 
             st.metric(
-
                 "ROC-AUC",
-
                 round(
                     model_metrics["ROC-AUC"],
                     3
                 )
-
             )
 
-
-
-# =====================================================
-# SHAP RESULTS
-# =====================================================
 
 
 if shap_results is not None:
@@ -232,24 +182,21 @@ if shap_results is not None:
 
 
     st.dataframe(
-
         shap_results.head(10)
-
     )
 
 
 
 # =====================================================
-# GENERATE PDF REPORT
+# GENERATE PDF
 # =====================================================
 
 
 st.divider()
 
 
-
 st.subheader(
-    "Generate PDF Report"
+    "Generate Complete Research Report"
 )
 
 
@@ -258,8 +205,6 @@ if st.button(
     "📄 Create Research Report"
 ):
 
-
-    # create reports folder
 
     os.makedirs(
         "reports",
@@ -274,24 +219,160 @@ if st.button(
 
 
 
+    # Paths of generated files
+
+
+    qc_results = (
+        "results/qc_results.csv"
+        if os.path.exists(
+            "results/qc_results.csv"
+        )
+        else None
+    )
+
+
+    pca_plot = (
+        "results/pca_plot.png"
+        if os.path.exists(
+            "results/pca_plot.png"
+        )
+        else None
+    )
+
+
+    heatmap_plot = (
+        "results/heatmap.png"
+        if os.path.exists(
+            "results/heatmap.png"
+        )
+        else None
+    )
+
+
+    clustering_plot = (
+        "results/clustering.png"
+        if os.path.exists(
+            "results/clustering.png"
+        )
+        else None
+    )
+
+
+    deg_results = (
+        "results/deg_results.csv"
+        if os.path.exists(
+            "results/deg_results.csv"
+        )
+        else None
+    )
+
+
+    feature_results = (
+        "results/selected_biomarkers.csv"
+        if os.path.exists(
+            "results/selected_biomarkers.csv"
+        )
+        else None
+    )
+
+
+    classification_report = (
+        "results/classification_report.csv"
+        if os.path.exists(
+            "results/classification_report.csv"
+        )
+        else None
+    )
+
+
+    confusion_matrix = (
+        "results/confusion_matrix.csv"
+        if os.path.exists(
+            "results/confusion_matrix.csv"
+        )
+        else None
+    )
+
+
+    shap_summary_plot = (
+        "results/shap_summary_plot.png"
+        if os.path.exists(
+            "results/shap_summary_plot.png"
+        )
+        else None
+    )
+
+
+    shap_bar_plot = (
+        "results/shap_bar_plot.png"
+        if os.path.exists(
+            "results/shap_bar_plot.png"
+        )
+        else None
+    )
+
+
+    gene_annotations = (
+        "results/gene_annotations.csv"
+        if os.path.exists(
+            "results/gene_annotations.csv"
+        )
+        else None
+    )
+
+
+    pathway_results = (
+        "results/pathway_enrichment.csv"
+        if os.path.exists(
+            "results/pathway_enrichment.csv"
+        )
+        else None
+    )
+
+
+
     generate_report(
 
         report_file,
 
         dataset_info,
 
+        qc_results,
+
+        pca_plot,
+
+        heatmap_plot,
+
+        clustering_plot,
+
+        deg_results,
+
+        feature_results,
+
         model_metrics,
 
-        biomarkers,
+        classification_report,
 
-        shap_results
+        confusion_matrix,
+
+        shap_results,
+
+        shap_summary_plot,
+
+        shap_bar_plot,
+
+        final_biomarkers,
+
+        gene_annotations,
+
+        pathway_results
 
     )
 
 
 
     st.success(
-        "Report generated successfully!"
+        "✅ Complete Research Report Generated!"
     )
 
 
