@@ -150,7 +150,7 @@ Generate a downloadable report containing:
 
 The platform can automatically:
 
-- Download GEO datasets
+- Download GEO datasets 
 - Extract expression matrices
 - Extract sample metadata
 - Detect experimental groups
