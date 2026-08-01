@@ -1,3 +1,14 @@
+from reportlab.platypus import Image
+
+content.append(Image("reports/pca_plot.png", width=450, height=300))
+
+content.append(Spacer(1, 20))
+
+content.append(Image("reports/heatmap.png", width=450, height=300))
+
+content.append(Spacer(1, 20))
+
+content.append(Image("reports/clustering.png", width=450, height=300))
 from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
