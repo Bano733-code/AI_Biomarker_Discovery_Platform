@@ -69,7 +69,7 @@ if st.button("Run Feature Selection"):
     )
     
     # Save path for report generation
-    st.session_state["biomarker_file"] = (
+    st.session_state["selected_biomarker_file"] = (
         "results/selected_biomarkers.csv"
     )
     st.success("Feature selection completed!")
