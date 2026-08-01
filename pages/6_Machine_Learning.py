@@ -1,5 +1,7 @@
 import streamlit as st
-
+import os
+import json
+import pandas as pd
 from utils.models import (
     prepare_ml_data,
     split_data,
@@ -104,10 +106,71 @@ if st.button(
         X_test,
         y_test
     )
-
+    # Save in Session State
     st.session_state["trained_model"] = model
     st.session_state["model_metrics"] = metrics
-
+    
+    # Create results folder
+    os.makedirs("results", exist_ok=True)
+    
+    # Save metrics
+    metrics_to_save = {}
+    
+    for key, value in metrics.items():
+    
+        if key not in [
+            "Classification Report",
+            "Confusion Matrix"
+        ]:
+    
+            metrics_to_save[key] = value
+    
+    with open(
+        "results/model_metrics.json",
+        "w"
+    ) as f:
+    
+        json.dump(
+            metrics_to_save,
+            f,
+            indent=4
+        )
+    
+    # Save Classification Report
+    if "Classification Report" in metrics:
+    
+        report_df = pd.DataFrame(
+            metrics["Classification Report"]
+        )
+    
+        report_df.to_csv(
+            "results/classification_report.csv"
+        )
+    
+    # Save Confusion Matrix
+    if "Confusion Matrix" in metrics:
+    
+        cm = pd.DataFrame(
+            metrics["Confusion Matrix"]
+        )
+    
+        cm.to_csv(
+            "results/confusion_matrix.csv",
+            index=False
+        )
+    
+    # Save paths for report generation
+    st.session_state["metrics_file"] = (
+        "results/model_metrics.json"
+    )
+    
+    st.session_state["classification_report_file"] = (
+        "results/classification_report.csv"
+    )
+    
+    st.session_state["confusion_matrix_file"] = (
+        "results/confusion_matrix.csv"
+    )
     save_model(model)
 
     st.success(
@@ -180,4 +243,22 @@ if "model_metrics" in st.session_state:
 
         st.dataframe(
             metrics["Classification Report"]
+        )
+    st.download_button(
+    "📥 Download Model Metrics",
+    data=json.dumps(
+        metrics_to_save,
+        indent=4
+    ),
+    file_name="model_metrics.json",
+    mime="application/json"
+    )
+
+    if "Classification Report" in metrics:
+    
+        st.download_button(
+            "📥 Download Classification Report",
+            data=report_df.to_csv(),
+            file_name="classification_report.csv",
+            mime="text/csv"
         )
