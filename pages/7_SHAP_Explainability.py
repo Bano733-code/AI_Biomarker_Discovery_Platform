@@ -1,5 +1,5 @@
 import streamlit as st
-
+import os
 from utils.shap_analysis import (
     calculate_shap_values,
     get_feature_importance,
@@ -99,10 +99,22 @@ if st.button(
             X,
             shap_values
         )
+        # Create results folder
+        os.makedirs("results", exist_ok=True)
 
         st.session_state["shap_values"] = shap_values
         st.session_state["shap_features"] = X
         st.session_state["shap_importance"] = importance
+        # Save SHAP importance table
+        importance.to_csv(
+            "results/shap_importance.csv",
+            index=False
+        )
+        
+        # Save for report generation
+        st.session_state["shap_file"] = (
+            "results/shap_importance.csv"
+        )
 
     st.success(
         "SHAP analysis completed successfully!"
@@ -137,7 +149,15 @@ if "shap_importance" in st.session_state:
         shap_values,
         X
     )
-
+    fig.savefig(
+        "results/shap_bar_plot.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+    
+    st.session_state["shap_bar_plot"] = (
+        "results/shap_bar_plot.png"
+    )
     st.pyplot(
         fig,
         clear_figure=True
@@ -151,7 +171,15 @@ if "shap_importance" in st.session_state:
         shap_values,
         X
     )
-
+    fig.savefig(
+    "results/shap_summary_plot.png",
+    dpi=300,
+    bbox_inches="tight"
+    )
+    
+    st.session_state["shap_summary_plot"] = (
+        "results/shap_summary_plot.png"
+    )
     st.pyplot(
         fig,
         clear_figure=True
