@@ -123,16 +123,21 @@ def sample_clustering(expression_df):
 
     expression = prepare_expression_data(expression_df)
 
-    correlation = expression.corr()
+    # Samples in rows
+    expression = expression.T
 
-    fig, ax = plt.subplots(figsize=(10,8))
-
-    sns.heatmap(
-        correlation,
+    cluster = sns.clustermap(
+        expression,
         cmap="viridis",
-        ax=ax
+        figsize=(10, 8),
+        metric="euclidean",
+        method="ward",
+        xticklabels=False,
+        yticklabels=True
     )
 
-    ax.set_title("Sample Clustering")
+    cluster.fig.suptitle("Sample Clustering", y=1.02)
 
-    return fig
+    return cluster.fig
+
+
