@@ -1,6 +1,6 @@
 import streamlit as st
 
-
+import os
 from utils.biology import (
     annotate_genes,
     pathway_enrichment
@@ -66,11 +66,21 @@ if st.button(
         top_genes
     )
 
-
+    # Create results folder
+    os.makedirs("results", exist_ok=True)
+    
+    # Save gene annotations
+    annotations.to_csv(
+        "results/gene_annotations.csv",
+        index=False
+    )
     st.session_state[
         "gene_annotations"
     ] = annotations
-
+    # Save path for report generation
+    st.session_state[
+        "gene_annotation_file"
+    ] = "results/gene_annotations.csv"
 
 
 if "gene_annotations" in st.session_state:
@@ -92,24 +102,29 @@ if "gene_annotations" in st.session_state:
 # -----------------------------
 # Pathway Analysis
 # -----------------------------
-
-
 if st.button(
     "Run Pathway Enrichment"
 ):
-
+    # Create results folder
+    os.makedirs("results", exist_ok=True)
+    
+    # Save pathway enrichment
+    pathways.to_csv(
+        "results/pathway_enrichment.csv",
+        index=False
+    )
 
     pathways = pathway_enrichment(
         top_genes
     )
 
-
     st.session_state[
         "pathways"
     ] = pathways
-
-
-
+    # Save path for report generation
+    st.session_state[
+        "pathway_file"
+    ] = "results/pathway_enrichment.csv"
 
 if "pathways" in st.session_state:
 
