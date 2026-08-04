@@ -149,6 +149,7 @@ Generate a downloadable report containing:
   <img src="assets/report_generation1.png" width="900">
 </p>
 ---
+
 ## 🧪 GEO Dataset Integration
 
 The platform can automatically:
