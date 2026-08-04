@@ -161,7 +161,29 @@ def prepare_features(
 
 
     return X, y
+# =====================================================
+# RNA-SEQ NORMALIZATION
+# =====================================================
 
+def log_normalization(X):
+
+    """
+    Log1p normalization for RNA-seq data.
+    """
+
+    X = X.astype(float)
+
+    X = np.log1p(X)
+
+    return pd.DataFrame(
+
+        X,
+
+        columns=X.columns,
+
+        index=X.index
+
+    )
 
 
 
@@ -496,4 +518,188 @@ def get_top_genes(
 
     return ranking_df.head(
         n_genes
+    )
+
+
+# =====================================================
+# COMPLETE BIOMARKER DISCOVERY PIPELINE
+# =====================================================
+
+
+def run_feature_selection_pipeline(
+
+    X,
+
+    y,
+
+    top_genes=100,
+
+    variance_threshold=0.01
+
+):
+
+    """
+    Complete RNA-seq biomarker pipeline:
+
+
+    Expression Data
+
+          |
+          ↓
+
+    Log Normalization
+
+          |
+          ↓
+
+    Variance Filtering
+
+          |
+          ↓
+
+    ANOVA
+
+          +
+
+    Mutual Information
+
+          +
+
+    Random Forest
+
+          |
+          ↓
+
+    Top Biomarkers
+
+          |
+          ↓
+
+    ML-ready expression matrix
+
+    """
+
+
+
+    # ----------------------------------
+    # Step 1
+    # Normalization
+    # ----------------------------------
+
+    X = log_normalization(
+        X
+    )
+
+
+    print(
+        "After normalization:",
+        X.shape
+    )
+
+
+
+    # ----------------------------------
+    # Step 2
+    # Variance filtering
+    # ----------------------------------
+
+    X_filtered = variance_filter(
+
+        X,
+
+        threshold=variance_threshold
+
+    )
+
+
+    print(
+        "After variance filtering:",
+        X_filtered.shape
+    )
+
+
+
+    # ----------------------------------
+    # Step 3
+    # Feature selection
+    # ----------------------------------
+
+    anova = anova_selection(
+
+        X_filtered,
+
+        y
+
+    )
+
+
+    mi = mutual_information_selection(
+
+        X_filtered,
+
+        y
+
+    )
+
+
+    rf = random_forest_selection(
+
+        X_filtered,
+
+        y
+
+    )
+
+
+
+    # ----------------------------------
+    # Step 4
+    # Combine rankings
+    # ----------------------------------
+
+    ranking = combine_rankings(
+
+        anova,
+
+        mi,
+
+        rf
+
+    )
+
+
+
+    # ----------------------------------
+    # Step 5
+    # Select top genes
+    # ----------------------------------
+
+    biomarkers = get_top_genes(
+
+        ranking,
+
+        top_genes
+
+    )
+
+
+
+    selected_genes = biomarkers["Gene"]
+
+
+
+    # Final ML matrix
+
+    X_selected = X_filtered[
+        selected_genes
+    ]
+
+
+
+    return (
+
+        X_selected,
+
+        biomarkers
+
     )
