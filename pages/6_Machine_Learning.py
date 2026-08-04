@@ -43,7 +43,7 @@ metadata_df = st.session_state["metadata"]
 # PREPARE DATA
 # =====================================================
 
-X, y = prepare_ml_data(
+X, y = prepare_features(
     expression_df,
     metadata_df
 )
