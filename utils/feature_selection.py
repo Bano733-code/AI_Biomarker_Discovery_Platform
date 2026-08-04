@@ -647,7 +647,7 @@ def run_feature_selection_pipeline(
 
         top_genes=100,
 
-        variance_threshold=0.1
+        variance_threshold=0.001
 
 ):
 
