@@ -213,13 +213,6 @@ def log_normalization(X):
 
 
     return X
-
-
-
-
-
-
-
 # =====================================================
 # VARIANCE FILTERING
 # =====================================================
@@ -251,32 +244,40 @@ def variance_filter(
 
 
 
-    selector = VarianceThreshold(
+       # Calculate variance manually
 
-        threshold=threshold
-
-    )
+    gene_variance = X.var()
 
 
-    filtered = selector.fit_transform(
-        X
-    )
+
+    # Keep genes above threshold
+
+    selected_genes = gene_variance[
+        gene_variance > threshold
+    ].index
 
 
-    genes = X.columns[
-        selector.get_support()
+
+    # If no genes survive,
+    # keep top variable genes
+
+    if len(selected_genes) == 0:
+
+
+        selected_genes = gene_variance.sort_values(
+
+            ascending=False
+
+        ).head(1000).index
+
+
+
+    X_filtered = X[
+
+        selected_genes
+
     ]
 
-
-    X_filtered = pd.DataFrame(
-
-        filtered,
-
-        columns=genes,
-
-        index=X.index
-
-    )
 
 
     return X_filtered
