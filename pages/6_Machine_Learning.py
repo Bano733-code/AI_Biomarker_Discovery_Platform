@@ -3,7 +3,6 @@ import os
 import json
 import pandas as pd
 from utils.models import (
-    prepare_ml_data,
     split_data,
     train_random_forest,
     train_logistic_regression,
@@ -11,6 +10,10 @@ from utils.models import (
     save_model
 )
 
+from utils.feature_selection import (
+    prepare_features,
+    run_feature_selection_pipeline
+)
 st.title("🤖 Machine Learning Biomarker Classification")
 
 # =====================================================
@@ -44,7 +47,15 @@ X, y = prepare_ml_data(
     expression_df,
     metadata_df
 )
+X, biomarkers = run_feature_selection_pipeline(
 
+    X,
+
+    y,
+
+    top_genes=100
+
+)
 st.subheader("Dataset Summary")
 
 col1, col2 = st.columns(2)
