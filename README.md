@@ -160,7 +160,7 @@ The platform can automatically:
 - Detect experimental groups
 - Prepare data for downstream analysis
 
-# Supported GEO Datasets
+## Supported GEO Datasets
 
 The current version of this platform supports GEO studies that provide a processed gene expression matrix (Series Matrix).
 
