@@ -159,6 +159,30 @@ The platform can automatically:
 - Detect experimental groups
 - Prepare data for downstream analysis
 
+# Supported GEO Datasets
+
+The current version of this platform supports GEO studies that provide a processed gene expression matrix (Series Matrix).
+
+Supported:
+- Microarray expression datasets
+- Processed expression matrices available through GEO
+
+Currently not supported:
+- Raw RNA-seq FASTQ files
+- Supplementary count files only
+- Single-cell RNA-seq datasets
+- GEO studies requiring external preprocessing
+
+Future versions will include automated processing of RNA-seq count matrices and expanded support for additional transcriptomic data formats.
+
+The platform can automatically:
+
+- Download GEO datasets 
+- Extract expression matrices
+- Extract sample metadata
+- Detect experimental groups
+- Prepare data for downstream analysis
+
 Example:
 
 ```
@@ -219,7 +243,8 @@ AI_Biomarker_Discovery/
 ├── data/
 ├── report.py/
 ├── requirements.txt
-│
+├── assets/
+|
 └── README.md
 ```
 ---
