@@ -1,6 +1,5 @@
 # utils/feature_selection.py
 
-
 import numpy as np
 import pandas as pd
 
@@ -10,7 +9,6 @@ from sklearn.feature_selection import (
     mutual_info_classif,
     VarianceThreshold
 )
-
 
 from sklearn.ensemble import RandomForestClassifier
 
@@ -39,12 +37,9 @@ def prepare_features(
         Labels
     """
 
-
-
     # Remove gene column
 
-    expression = expression_df.iloc[:,1:]
-
+    expression = expression_df.iloc[:, 1:]
 
 
     # Samples as rows
@@ -52,78 +47,58 @@ def prepare_features(
     X = expression.T
 
 
-
     # Gene names
 
-    X.columns = expression_df.iloc[:,0]
+    X.columns = expression_df.iloc[:, 0]
 
 
-
-    # Numeric conversion
+    # Convert numeric
 
     X = X.apply(
-
         pd.to_numeric,
-
         errors="coerce"
-
     )
 
 
-
-    # Remove invalid values
+    # Remove infinity
 
     X = X.replace(
-
-        [np.inf,-np.inf],
-
+        [np.inf, -np.inf],
         np.nan
-
     )
-
 
 
     # Remove empty genes
 
     X = X.dropna(
-
         axis=1,
-
         how="all"
-
     )
-
 
 
     # Remove empty samples
 
     X = X.dropna(
-
         axis=0,
-
         how="all"
-
     )
 
 
-
-    # Fill missing values
+    # Fill missing
 
     X = X.fillna(
         X.mean()
     )
-
 
     X = X.fillna(0)
 
 
 
     # -------------------------------
-    # Label detection
+    # Find label column
     # -------------------------------
 
-
-    label_columns=[
+    label_columns = [
 
         "Group",
         "group",
@@ -133,15 +108,14 @@ def prepare_features(
     ]
 
 
-    label=None
-
+    label = None
 
 
     for col in label_columns:
 
         if col in metadata_df.columns:
 
-            label=col
+            label = col
 
             break
 
@@ -150,35 +124,29 @@ def prepare_features(
     if label is None:
 
         raise ValueError(
-            "No label column found"
+            "No class label column found"
         )
-
 
 
     y = metadata_df[label]
 
 
-
-    # Sample ID alignment
+    # Align sample IDs
 
     y.index = metadata_df.iloc[:,0]
 
 
-
-    common = X.index.intersection(
-
+    common_samples = X.index.intersection(
         y.index
-
     )
 
 
-    X=X.loc[common]
+    X = X.loc[common_samples]
 
-    y=y.loc[common]
+    y = y.loc[common_samples]
 
 
-
-    return X,y
+    return X, y
 
 
 
@@ -187,39 +155,49 @@ def prepare_features(
 
 
 # =====================================================
-# NORMALIZATION
+# SAFE LOG NORMALIZATION
 # =====================================================
 
 
 def log_normalization(X):
 
     """
-    RNA-seq log1p normalization
+    Safe RNA-seq log normalization.
+    Handles negative expression values.
     """
-
 
 
     X = X.astype(float)
 
 
-
     X = X.replace(
-
         [np.inf,-np.inf],
-
         np.nan
-
     )
-
 
 
     X = X.fillna(0)
 
 
 
+    # Shift negative values
+
+    minimum = X.min().min()
+
+
+    if minimum < 0:
+
+        X = X - minimum
+
+
+
+    # Log transform
+
     X = np.log1p(X)
 
 
+
+    # Final cleaning
 
     X = X.replace(
 
@@ -228,7 +206,6 @@ def log_normalization(X):
         np.nan
 
     )
-
 
 
     X = X.fillna(0)
@@ -252,15 +229,13 @@ def variance_filter(
 
         X,
 
-        threshold=0.01
+        threshold=0.1
 
 ):
 
-
     """
-    Remove low variance genes
+    Remove low variance genes.
     """
-
 
 
     X = X.replace(
@@ -283,24 +258,17 @@ def variance_filter(
     )
 
 
-
     filtered = selector.fit_transform(
-
         X
-
     )
 
 
-
     genes = X.columns[
-
         selector.get_support()
-
     ]
 
 
-
-    X_filtered=pd.DataFrame(
+    X_filtered = pd.DataFrame(
 
         filtered,
 
@@ -309,7 +277,6 @@ def variance_filter(
         index=X.index
 
     )
-
 
 
     return X_filtered
@@ -321,7 +288,7 @@ def variance_filter(
 
 
 # =====================================================
-# ANOVA
+# ANOVA FEATURE SELECTION
 # =====================================================
 
 
@@ -334,7 +301,7 @@ def anova_selection(
 ):
 
 
-    X=X.replace(
+    X = X.replace(
 
         [np.inf,-np.inf],
 
@@ -343,11 +310,11 @@ def anova_selection(
     )
 
 
-    X=X.fillna(0)
+    X = X.fillna(0)
 
 
 
-    scores,p_values=f_classif(
+    scores, p_values = f_classif(
 
         X,
 
@@ -357,19 +324,18 @@ def anova_selection(
 
 
 
-    result=pd.DataFrame({
+    result = pd.DataFrame({
 
-        "Gene":X.columns,
+        "Gene": X.columns,
 
-        "ANOVA Score":scores,
+        "ANOVA Score": scores,
 
-        "P Value":p_values
+        "P Value": p_values
 
     })
 
 
-
-    result=result.replace(
+    result = result.replace(
 
         [np.inf,-np.inf],
 
@@ -378,7 +344,7 @@ def anova_selection(
     )
 
 
-    result=result.dropna()
+    result = result.dropna()
 
 
 
@@ -412,11 +378,11 @@ def mutual_information_selection(
 ):
 
 
-    X=X.fillna(0)
+    X = X.fillna(0)
 
 
 
-    scores=mutual_info_classif(
+    scores = mutual_info_classif(
 
         X,
 
@@ -428,13 +394,25 @@ def mutual_information_selection(
 
 
 
-    result=pd.DataFrame({
+    result = pd.DataFrame({
 
-        "Gene":X.columns,
+        "Gene": X.columns,
 
-        "MI Score":scores
+        "MI Score": scores
 
     })
+
+
+    result = result.replace(
+
+        [np.inf,-np.inf],
+
+        np.nan
+
+    )
+
+
+    result = result.dropna()
 
 
 
@@ -455,7 +433,7 @@ def mutual_information_selection(
 
 
 # =====================================================
-# RANDOM FOREST IMPORTANCE
+# RANDOM FOREST FEATURE IMPORTANCE
 # =====================================================
 
 
@@ -468,11 +446,11 @@ def random_forest_selection(
 ):
 
 
-    X=X.fillna(0)
+    X = X.fillna(0)
 
 
 
-    model=RandomForestClassifier(
+    model = RandomForestClassifier(
 
         n_estimators=300,
 
@@ -496,11 +474,12 @@ def random_forest_selection(
 
 
 
-    result=pd.DataFrame({
+    result = pd.DataFrame({
 
-        "Gene":X.columns,
+        "Gene": X.columns,
 
-        "Importance":model.feature_importances_
+        "Importance":
+            model.feature_importances_
 
     })
 
@@ -538,7 +517,7 @@ def combine_rankings(
 ):
 
 
-    merged=anova.merge(
+    merged = anova.merge(
 
         mi,
 
@@ -549,8 +528,7 @@ def combine_rankings(
     )
 
 
-
-    merged=merged.merge(
+    merged = merged.merge(
 
         rf,
 
@@ -562,29 +540,43 @@ def combine_rankings(
 
 
 
-    merged["ANOVA Rank"]=merged[
-        "ANOVA Score"
-    ].rank(
-        ascending=False
-    )
+    merged["ANOVA Rank"] = (
 
+        merged["ANOVA Score"]
 
-    merged["MI Rank"]=merged[
-        "MI Score"
-    ].rank(
-        ascending=False
-    )
+        .rank(
+            ascending=False
+        )
 
-
-    merged["RF Rank"]=merged[
-        "Importance"
-    ].rank(
-        ascending=False
     )
 
 
 
-    merged["Final Score"]=(
+    merged["MI Rank"] = (
+
+        merged["MI Score"]
+
+        .rank(
+            ascending=False
+        )
+
+    )
+
+
+
+    merged["RF Rank"] = (
+
+        merged["Importance"]
+
+        .rank(
+            ascending=False
+        )
+
+    )
+
+
+
+    merged["Final Score"] = (
 
         merged["ANOVA Rank"]
 
@@ -629,7 +621,6 @@ def get_top_genes(
 
 ):
 
-
     return ranking_df.head(
         n_genes
     )
@@ -643,7 +634,7 @@ def get_top_genes(
 
 
 # =====================================================
-# COMPLETE PIPELINE
+# COMPLETE BIOMARKER PIPELINE
 # =====================================================
 
 
@@ -655,7 +646,7 @@ def run_feature_selection_pipeline(
 
         top_genes=100,
 
-        variance_threshold=0.01
+        variance_threshold=0.1
 
 ):
 
@@ -667,50 +658,76 @@ def run_feature_selection_pipeline(
 
 
 
+    # Step 1
     # Normalization
 
-    X=log_normalization(X)
+    X = log_normalization(X)
 
 
 
     print(
-        "Normalized:",
+        "After normalization:",
         X.shape
     )
 
 
 
+    # Step 2
     # Variance filtering
 
-    X_filtered=variance_filter(
+    X_filtered = variance_filter(
 
         X,
 
-        threshold=variance_threshold
+        variance_threshold
 
     )
 
 
 
     print(
-        "Variance filtered:",
+
+        "After variance filtering:",
+
         X_filtered.shape
+
     )
 
 
 
-    if X_filtered.shape[1]==0:
+    if X_filtered.shape[1] == 0:
 
         raise ValueError(
-            "No genes left after variance filtering. Lower threshold."
+
+            "No genes survived variance filtering"
+
         )
 
 
 
+    # Step 3
     # Feature selection
 
 
-    anova=anova_selection(
+    anova = anova_selection(
+
+        X_filtered,
+
+        y
+
+    )
+
+
+    mi = mutual_information_selection(
+
+        X_filtered,
+
+        y
+
+    )
+
+
+    rf = random_forest_selection(
 
         X_filtered,
 
@@ -720,30 +737,11 @@ def run_feature_selection_pipeline(
 
 
 
-    mi=mutual_information_selection(
-
-        X_filtered,
-
-        y
-
-    )
+    # Step 4
+    # Combine
 
 
-
-    rf=random_forest_selection(
-
-        X_filtered,
-
-        y
-
-    )
-
-
-
-    # Ranking
-
-
-    ranking=combine_rankings(
+    ranking = combine_rankings(
 
         anova,
 
@@ -755,7 +753,11 @@ def run_feature_selection_pipeline(
 
 
 
-    biomarkers=get_top_genes(
+    # Step 5
+    # Biomarkers
+
+
+    biomarkers = get_top_genes(
 
         ranking,
 
@@ -765,11 +767,11 @@ def run_feature_selection_pipeline(
 
 
 
-    selected_genes=biomarkers["Gene"]
+    selected_genes = biomarkers["Gene"]
 
 
 
-    X_selected=X_filtered[
+    X_selected = X_filtered[
 
         selected_genes
 
@@ -777,9 +779,24 @@ def run_feature_selection_pipeline(
 
 
 
+    # Final safety
+
+    X_selected = X_selected.replace(
+
+        [np.inf,-np.inf],
+
+        np.nan
+
+    )
+
+
+    X_selected = X_selected.fillna(0)
+
+
+
     print(
 
-        "Selected biomarkers:",
+        "Final biomarker matrix:",
 
         X_selected.shape
 
