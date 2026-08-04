@@ -1,12 +1,26 @@
+# utils/models.py
+
+
 import os
 import joblib
 import pandas as pd
+import numpy as np
+
 
 from sklearn.model_selection import train_test_split
 
+
 from sklearn.ensemble import RandomForestClassifier
 
+
 from sklearn.linear_model import LogisticRegression
+
+
+from sklearn.pipeline import Pipeline
+
+
+from sklearn.preprocessing import StandardScaler
+
 
 from sklearn.metrics import (
     accuracy_score,
@@ -19,59 +33,117 @@ from sklearn.metrics import (
 )
 
 
+
+
+
 # =====================================================
 # PREPARE MACHINE LEARNING DATA
 # =====================================================
+
 
 def prepare_ml_data(
         expression_df,
         metadata_df
 ):
+
     """
-    Prepare expression matrix for ML.
+    Convert expression matrix into ML format.
 
     Input:
 
-    expression_df:
         Genes x Samples
-
-    metadata_df:
-        Sample labels
 
     Output:
 
-    X:
-        Samples x Genes
+        X = Samples x Genes
 
-    y:
-        Disease labels
+        y = Labels
+
     """
 
 
-    # Remove gene column
 
-    genes = expression_df.iloc[:, 0]
+    # Gene names
 
-
-    expression = expression_df.iloc[:, 1:]
+    genes = expression_df.iloc[:,0]
 
 
-    # Samples as rows
+
+    # Expression values
+
+    expression = expression_df.iloc[:,1:]
+
+
+
+    # Samples become rows
 
     X = expression.T
 
 
-    # Gene names become features
+
+    # Genes become features
 
     X.columns = genes
 
 
-    # Target labels
 
-    y = metadata_df["Group"]
+    # Numeric conversion
+
+    X = X.apply(
+        pd.to_numeric,
+        errors="coerce"
+    )
 
 
-    return X, y
+
+    X = X.fillna(0)
+
+
+
+    # -------------------------
+    # Label
+    # -------------------------
+
+
+    if "Group" in metadata_df.columns:
+
+        y = metadata_df["Group"]
+
+    elif "group" in metadata_df.columns:
+
+        y = metadata_df["group"]
+
+    elif "Condition" in metadata_df.columns:
+
+        y = metadata_df["Condition"]
+
+    else:
+
+        raise ValueError(
+            "No label column found"
+        )
+
+
+
+    # Align labels
+
+    y.index = metadata_df.iloc[:,0]
+
+
+    common = X.index.intersection(
+        y.index
+    )
+
+
+    X = X.loc[common]
+
+    y = y.loc[common]
+
+
+
+    return X,y
+
+
 
 
 
@@ -79,10 +151,34 @@ def prepare_ml_data(
 # TRAIN TEST SPLIT
 # =====================================================
 
+
 def split_data(
         X,
         y
 ):
+
+
+    # Remove classes with only one sample
+
+    counts = y.value_counts()
+
+
+    valid_classes = counts[
+        counts >= 2
+    ].index
+
+
+
+    mask = y.isin(
+        valid_classes
+    )
+
+
+    X = X[mask]
+
+    y = y[mask]
+
+
 
     X_train, X_test, y_train, y_test = train_test_split(
 
@@ -108,31 +204,44 @@ def split_data(
 
 
 
+
+
 # =====================================================
 # RANDOM FOREST
 # =====================================================
+
 
 def train_random_forest(
         X_train,
         y_train
 ):
 
+
     model = RandomForestClassifier(
 
-        n_estimators=200,
+        n_estimators=300,
 
-        random_state=42
+        random_state=42,
+
+        class_weight="balanced",
+
+        n_jobs=-1
 
     )
 
 
     model.fit(
+
         X_train,
+
         y_train
+
     )
 
 
     return model
+
+
 
 
 
@@ -140,14 +249,40 @@ def train_random_forest(
 # LOGISTIC REGRESSION
 # =====================================================
 
+
 def train_logistic_regression(
         X_train,
         y_train
 ):
 
-    model = LogisticRegression(
 
-        max_iter=2000
+    model = Pipeline(
+
+        [
+
+            (
+                "scaler",
+
+                StandardScaler()
+
+            ),
+
+
+            (
+
+                "classifier",
+
+                LogisticRegression(
+
+                    max_iter=3000,
+
+                    class_weight="balanced"
+
+                )
+
+            )
+
+        ]
 
     )
 
@@ -165,9 +300,12 @@ def train_logistic_regression(
 
 
 
+
+
 # =====================================================
 # MODEL EVALUATION
 # =====================================================
+
 
 def evaluate_model(
         model,
@@ -181,7 +319,8 @@ def evaluate_model(
     )
 
 
-    metrics = {}
+    metrics={}
+
 
 
     metrics["Accuracy"] = accuracy_score(
@@ -232,27 +371,44 @@ def evaluate_model(
     )
 
 
+
     # ROC-AUC
 
     try:
 
         probabilities = model.predict_proba(
             X_test
-        )[:,1]
-
-
-        metrics["ROC-AUC"] = roc_auc_score(
-
-            y_test,
-
-            probabilities
-
         )
+
+
+        if probabilities.shape[1] == 2:
+
+            metrics["ROC-AUC"] = roc_auc_score(
+
+                y_test,
+
+                probabilities[:,1]
+
+            )
+
+        else:
+
+            metrics["ROC-AUC"] = roc_auc_score(
+
+                y_test,
+
+                probabilities,
+
+                multi_class="ovr"
+
+            )
 
 
     except:
 
         metrics["ROC-AUC"] = None
+
+
 
 
 
@@ -263,6 +419,7 @@ def evaluate_model(
         predictions
 
     )
+
 
 
     metrics["Classification Report"] = pd.DataFrame(
@@ -285,19 +442,78 @@ def evaluate_model(
 
 
 
+
+
+# =====================================================
+# FEATURE IMPORTANCE (FOR SHAP)
+# =====================================================
+
+
+def get_feature_importance(
+        model,
+        features
+):
+
+
+    """
+    Extract important genes
+    for interpretation.
+    """
+
+
+    if hasattr(
+        model,
+        "feature_importances_"
+    ):
+
+
+        importance = model.feature_importances_
+
+
+    else:
+
+        return None
+
+
+
+    return pd.DataFrame({
+
+        "Gene":features,
+
+        "Importance":importance
+
+    }).sort_values(
+
+        "Importance",
+
+        ascending=False
+
+    )
+
+
+
+
+
 # =====================================================
 # SAVE MODEL
 # =====================================================
 
+
 def save_model(
+
         model,
+
         filename="models/biomarker_model.pkl"
+
 ):
 
 
     os.makedirs(
+
         "models",
+
         exist_ok=True
+
     )
 
 
