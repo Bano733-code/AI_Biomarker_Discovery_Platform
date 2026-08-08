@@ -1,3 +1,4 @@
+
 import requests
 import pandas as pd
 
@@ -6,7 +7,15 @@ import pandas as pd
 # MyGene.info API
 # ============================================================
 
-MYGENE_API = "https://mygene.info/v3/gene/"
+MYGENE_API = "https://mygene.info/v3/gene"
+
+# ============================================================
+# g:Profiler API
+# ============================================================
+
+GPROFILER_API = (
+    "https://biit.cs.ut.ee/gprofiler/api/gost/profile/"
+)
 
 
 # ============================================================
@@ -20,7 +29,7 @@ def get_gene_information(gene):
     Parameters
     ----------
     gene : str
-        Gene symbol, Entrez ID, Ensembl ID, or other
+        Gene symbol, Entrez ID, Ensembl ID, or another
         supported MyGene identifier.
 
     Returns
@@ -31,27 +40,54 @@ def get_gene_information(gene):
 
     gene = str(gene).strip()
 
+    # --------------------------------------------------------
+    # Empty identifier
+    # --------------------------------------------------------
+
     if not gene:
+
         return {
             "Gene": "",
             "Name": "Not available",
             "Symbol": "",
-            "Summary": "No gene identifier provided",
+            "Summary": "No gene identifier provided.",
+            "Status": "Invalid",
         }
 
     try:
 
+        # ----------------------------------------------------
+        # Request gene information
+        # ----------------------------------------------------
+
         response = requests.get(
-            f"{MYGENE_API}{gene}",
-            timeout=10,
+            f"{MYGENE_API}/{gene}",
+            params={
+                "species": "human"
+            },
+            headers={
+                "Accept": "application/json",
+                "User-Agent": (
+                    "AI-Biomarker-Discovery-Platform/1.0"
+                ),
+            },
+            timeout=20,
         )
 
+        # ----------------------------------------------------
+        # Check HTTP response
+        # ----------------------------------------------------
+
         response.raise_for_status()
+
+        # ----------------------------------------------------
+        # Parse JSON
+        # ----------------------------------------------------
 
         data = response.json()
 
         # ----------------------------------------------------
-        # MyGene may return "notfound"
+        # Gene not found
         # ----------------------------------------------------
 
         if data.get("notfound", False):
@@ -60,44 +96,131 @@ def get_gene_information(gene):
                 "Gene": gene,
                 "Name": "Not available",
                 "Symbol": gene,
-                "Summary": "Gene not found in MyGene.info",
+                "Summary": (
+                    "Gene was not found in MyGene.info."
+                ),
+                "Status": "Not found",
             }
 
+        # ----------------------------------------------------
+        # Extract annotation
+        # ----------------------------------------------------
+
+        name = data.get(
+            "name",
+            "Not available",
+        )
+
+        symbol = data.get(
+            "symbol",
+            gene,
+        )
+
+        summary = data.get(
+            "summary",
+            "No description available.",
+        )
+
+        # ----------------------------------------------------
+        # Clean None values
+        # ----------------------------------------------------
+
+        if name is None:
+            name = "Not available"
+
+        if symbol is None:
+            symbol = gene
+
+        if summary is None:
+            summary = "No description available."
+
         return {
             "Gene": gene,
-
-            "Name": data.get(
-                "name",
-                "Not available",
-            ),
-
-            "Symbol": data.get(
-                "symbol",
-                gene,
-            ),
-
-            "Summary": data.get(
-                "summary",
-                "No description available",
-            ),
+            "Name": name,
+            "Symbol": symbol,
+            "Summary": summary,
+            "Status": "Success",
         }
 
-    except requests.exceptions.RequestException:
+    # ========================================================
+    # CONNECTION ERROR
+    # ========================================================
+
+    except requests.exceptions.ConnectionError:
 
         return {
             "Gene": gene,
             "Name": "Error",
             "Symbol": gene,
-            "Summary": "Could not connect to MyGene.info",
+            "Summary": (
+                "Could not connect to MyGene.info. "
+                "Please check the internet connection."
+            ),
+            "Status": "Connection error",
         }
 
-    except Exception:
+    # ========================================================
+    # TIMEOUT
+    # ========================================================
+
+    except requests.exceptions.Timeout:
 
         return {
             "Gene": gene,
             "Name": "Error",
             "Symbol": gene,
-            "Summary": "Could not retrieve information",
+            "Summary": (
+                "MyGene.info request timed out."
+            ),
+            "Status": "Timeout",
+        }
+
+    # ========================================================
+    # HTTP ERROR
+    # ========================================================
+
+    except requests.exceptions.HTTPError as e:
+
+        return {
+            "Gene": gene,
+            "Name": "Error",
+            "Symbol": gene,
+            "Summary": (
+                f"MyGene.info returned an HTTP error: {e}"
+            ),
+            "Status": "HTTP error",
+        }
+
+    # ========================================================
+    # JSON ERROR
+    # ========================================================
+
+    except ValueError:
+
+        return {
+            "Gene": gene,
+            "Name": "Error",
+            "Symbol": gene,
+            "Summary": (
+                "MyGene.info returned an invalid response."
+            ),
+            "Status": "Invalid response",
+        }
+
+    # ========================================================
+    # GENERAL ERROR
+    # ========================================================
+
+    except Exception as e:
+
+        return {
+            "Gene": gene,
+            "Name": "Error",
+            "Symbol": gene,
+            "Summary": (
+                f"Could not retrieve information: {e}"
+            ),
+            "Status": "Error",
         }
 
 
@@ -144,6 +267,10 @@ def annotate_genes(genes):
             get_gene_information(gene)
         )
 
+    # --------------------------------------------------------
+    # No genes
+    # --------------------------------------------------------
+
     if not results:
 
         return pd.DataFrame(
@@ -152,6 +279,7 @@ def annotate_genes(genes):
                 "Name",
                 "Symbol",
                 "Summary",
+                "Status",
             ]
         )
 
@@ -177,10 +305,6 @@ def pathway_enrichment(genes):
         Enriched biological pathways.
     """
 
-    url = (
-        "https://biit.cs.ut.ee/gprofiler/api/gost/profile/"
-    )
-
     # --------------------------------------------------------
     # Clean genes
     # --------------------------------------------------------
@@ -202,6 +326,10 @@ def pathway_enrichment(genes):
         dict.fromkeys(clean_genes)
     )
 
+    # --------------------------------------------------------
+    # No genes
+    # --------------------------------------------------------
+
     if not clean_genes:
 
         return pd.DataFrame(
@@ -212,6 +340,10 @@ def pathway_enrichment(genes):
             ]
         )
 
+    # --------------------------------------------------------
+    # g:Profiler payload
+    # --------------------------------------------------------
+
     payload = {
         "organism": "hsapiens",
         "query": clean_genes,
@@ -220,8 +352,15 @@ def pathway_enrichment(genes):
     try:
 
         response = requests.post(
-            url,
+            GPROFILER_API,
             json=payload,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": (
+                    "AI-Biomarker-Discovery-Platform/1.0"
+                ),
+            },
             timeout=30,
         )
 
@@ -233,7 +372,7 @@ def pathway_enrichment(genes):
 
         for item in data.get(
             "result",
-            [],
+            []
         )[:20]:
 
             results.append(
@@ -255,6 +394,10 @@ def pathway_enrichment(genes):
                 }
             )
 
+        # ----------------------------------------------------
+        # No enrichment results
+        # ----------------------------------------------------
+
         if not results:
 
             return pd.DataFrame(
@@ -265,9 +408,33 @@ def pathway_enrichment(genes):
                 ]
             )
 
-        return pd.DataFrame(results)
+        result_df = pd.DataFrame(
+            results
+        )
 
-    except requests.exceptions.RequestException:
+        # ----------------------------------------------------
+        # Sort by P-value
+        # ----------------------------------------------------
+
+        result_df["P-value"] = pd.to_numeric(
+            result_df["P-value"],
+            errors="coerce",
+        )
+
+        result_df = result_df.sort_values(
+            by="P-value",
+            ascending=True,
+        )
+
+        return result_df.reset_index(
+            drop=True
+        )
+
+    # ========================================================
+    # CONNECTION ERROR
+    # ========================================================
+
+    except requests.exceptions.ConnectionError:
 
         return pd.DataFrame(
             columns=[
@@ -276,6 +443,38 @@ def pathway_enrichment(genes):
                 "P-value",
             ]
         )
+
+    # ========================================================
+    # TIMEOUT
+    # ========================================================
+
+    except requests.exceptions.Timeout:
+
+        return pd.DataFrame(
+            columns=[
+                "Term",
+                "Source",
+                "P-value",
+            ]
+        )
+
+    # ========================================================
+    # HTTP ERROR
+    # ========================================================
+
+    except requests.exceptions.HTTPError:
+
+        return pd.DataFrame(
+            columns=[
+                "Term",
+                "Source",
+                "P-value",
+            ]
+        )
+
+    # ========================================================
+    # GENERAL ERROR
+    # ========================================================
 
     except Exception:
 
