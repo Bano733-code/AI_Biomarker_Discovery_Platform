@@ -1,3 +1,4 @@
+<div align="center">
 
 # 🧬 AI Biomarker Discovery Platform
 
@@ -10,7 +11,7 @@
 An end-to-end **AI-powered biomarker discovery platform** that integrates bioinformatics, machine learning, and explainable AI to identify potential disease-associated biomarkers from gene expression data.
 
 The platform allows researchers to upload or automatically retrieve public gene expression datasets, perform preprocessing, train machine learning models, interpret predictions using SHAP explainability, and generate biological insights.
-
+</div>
 ---
 
 # 🚀 Project Overview
