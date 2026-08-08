@@ -1,4 +1,3 @@
-
 import requests
 import pandas as pd
 
@@ -7,15 +6,7 @@ import pandas as pd
 # MyGene.info API
 # ============================================================
 
-MYGENE_API = "https://mygene.info/v3/gene"
-
-# ============================================================
-# g:Profiler API
-# ============================================================
-
-GPROFILER_API = (
-    "https://biit.cs.ut.ee/gprofiler/api/gost/profile/"
-)
+MYGENE_QUERY_API = "https://mygene.info/v3/query"
 
 
 # ============================================================
@@ -24,13 +15,18 @@ GPROFILER_API = (
 
 def get_gene_information(gene):
     """
-    Retrieve gene information from MyGene.info.
+    Retrieve human gene information from MyGene.info.
+
+    Supports:
+        - Gene symbols (BRCA1, MYC, TP53)
+        - Entrez IDs
+        - Ensembl IDs
+        - Other identifiers recognized by MyGene.info
 
     Parameters
     ----------
     gene : str
-        Gene symbol, Entrez ID, Ensembl ID, or another
-        supported MyGene identifier.
+        Gene identifier.
 
     Returns
     -------
@@ -45,171 +41,120 @@ def get_gene_information(gene):
     # --------------------------------------------------------
 
     if not gene:
-
         return {
             "Gene": "",
             "Name": "Not available",
             "Symbol": "",
-            "Summary": "No gene identifier provided.",
-            "Status": "Invalid",
+            "Summary": "No gene identifier provided",
         }
+
+    # --------------------------------------------------------
+    # Query MyGene.info
+    # --------------------------------------------------------
 
     try:
 
-        # ----------------------------------------------------
-        # Request gene information
-        # ----------------------------------------------------
-
         response = requests.get(
-            f"{MYGENE_API}/{gene}",
+            MYGENE_QUERY_API,
             params={
-                "species": "human"
-            },
-            headers={
-                "Accept": "application/json",
-                "User-Agent": (
-                    "AI-Biomarker-Discovery-Platform/1.0"
-                ),
+                "q": gene,
+                "species": "human",
+                "fields": "symbol,name,summary,entrezgene,ensembl",
+                "size": 5,
             },
             timeout=20,
         )
 
-        # ----------------------------------------------------
-        # Check HTTP response
-        # ----------------------------------------------------
-
         response.raise_for_status()
-
-        # ----------------------------------------------------
-        # Parse JSON
-        # ----------------------------------------------------
 
         data = response.json()
 
+        hits = data.get("hits", [])
+
         # ----------------------------------------------------
-        # Gene not found
+        # No result
         # ----------------------------------------------------
 
-        if data.get("notfound", False):
+        if not hits:
 
             return {
                 "Gene": gene,
                 "Name": "Not available",
                 "Symbol": gene,
-                "Summary": (
-                    "Gene was not found in MyGene.info."
-                ),
-                "Status": "Not found",
+                "Summary": "Gene not found in MyGene.info",
             }
 
         # ----------------------------------------------------
-        # Extract annotation
+        # Find best matching result
         # ----------------------------------------------------
 
-        name = data.get(
-            "name",
-            "Not available",
-        )
+        best_hit = None
 
-        symbol = data.get(
+        gene_upper = gene.upper()
+
+        for hit in hits:
+
+            symbol = str(
+                hit.get("symbol", "")
+            ).upper()
+
+            if symbol == gene_upper:
+
+                best_hit = hit
+                break
+
+        # If exact symbol match wasn't found,
+        # use the first result.
+
+        if best_hit is None:
+            best_hit = hits[0]
+
+        # ----------------------------------------------------
+        # Extract information
+        # ----------------------------------------------------
+
+        symbol = best_hit.get(
             "symbol",
             gene,
         )
 
-        summary = data.get(
+        name = best_hit.get(
+            "name",
+            "Not available",
+        )
+
+        summary = best_hit.get(
             "summary",
-            "No description available.",
+            "No description available",
         )
 
         # ----------------------------------------------------
-        # Clean None values
+        # Return annotation
         # ----------------------------------------------------
-
-        if name is None:
-            name = "Not available"
-
-        if symbol is None:
-            symbol = gene
-
-        if summary is None:
-            summary = "No description available."
 
         return {
             "Gene": gene,
             "Name": name,
             "Symbol": symbol,
             "Summary": summary,
-            "Status": "Success",
         }
 
-    # ========================================================
-    # CONNECTION ERROR
-    # ========================================================
+    # --------------------------------------------------------
+    # HTTP / connection error
+    # --------------------------------------------------------
 
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.RequestException as e:
 
         return {
             "Gene": gene,
             "Name": "Error",
             "Symbol": gene,
-            "Summary": (
-                "Could not connect to MyGene.info. "
-                "Please check the internet connection."
-            ),
-            "Status": "Connection error",
+            "Summary": f"MyGene.info request failed: {str(e)}",
         }
 
-    # ========================================================
-    # TIMEOUT
-    # ========================================================
-
-    except requests.exceptions.Timeout:
-
-        return {
-            "Gene": gene,
-            "Name": "Error",
-            "Symbol": gene,
-            "Summary": (
-                "MyGene.info request timed out."
-            ),
-            "Status": "Timeout",
-        }
-
-    # ========================================================
-    # HTTP ERROR
-    # ========================================================
-
-    except requests.exceptions.HTTPError as e:
-
-        return {
-            "Gene": gene,
-            "Name": "Error",
-            "Symbol": gene,
-            "Summary": (
-                f"MyGene.info returned an HTTP error: {e}"
-            ),
-            "Status": "HTTP error",
-        }
-
-    # ========================================================
-    # JSON ERROR
-    # ========================================================
-
-    except ValueError:
-
-        return {
-            "Gene": gene,
-            "Name": "Error",
-            "Symbol": gene,
-            "Summary": (
-                "MyGene.info returned an invalid response."
-            ),
-            "Status": "Invalid response",
-        }
-
-    # ========================================================
-    # GENERAL ERROR
-    # ========================================================
+    # --------------------------------------------------------
+    # JSON / unexpected error
+    # --------------------------------------------------------
 
     except Exception as e:
 
@@ -217,10 +162,7 @@ def get_gene_information(gene):
             "Gene": gene,
             "Name": "Error",
             "Symbol": gene,
-            "Summary": (
-                f"Could not retrieve information: {e}"
-            ),
-            "Status": "Error",
+            "Summary": f"Could not retrieve information: {str(e)}",
         }
 
 
@@ -279,7 +221,6 @@ def annotate_genes(genes):
                 "Name",
                 "Symbol",
                 "Summary",
-                "Status",
             ]
         )
 
@@ -297,13 +238,17 @@ def pathway_enrichment(genes):
     Parameters
     ----------
     genes : iterable
-        List of human gene symbols.
+        Human gene symbols.
 
     Returns
     -------
     pandas.DataFrame
         Enriched biological pathways.
     """
+
+    url = (
+        "https://biit.cs.ut.ee/gprofiler/api/gost/profile/"
+    )
 
     # --------------------------------------------------------
     # Clean genes
@@ -347,20 +292,20 @@ def pathway_enrichment(genes):
     payload = {
         "organism": "hsapiens",
         "query": clean_genes,
+        "sources": [
+            "GO:BP",
+            "GO:MF",
+            "GO:CC",
+            "KEGG",
+            "REAC",
+        ],
     }
 
     try:
 
         response = requests.post(
-            GPROFILER_API,
+            url,
             json=payload,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "User-Agent": (
-                    "AI-Biomarker-Discovery-Platform/1.0"
-                ),
-            },
             timeout=30,
         )
 
@@ -370,9 +315,13 @@ def pathway_enrichment(genes):
 
         results = []
 
+        # ----------------------------------------------------
+        # Parse results
+        # ----------------------------------------------------
+
         for item in data.get(
             "result",
-            []
+            [],
         )[:20]:
 
             results.append(
@@ -391,6 +340,21 @@ def pathway_enrichment(genes):
                         "p_value",
                         None,
                     ),
+
+                    "Intersection Size": item.get(
+                        "intersection_size",
+                        None,
+                    ),
+
+                    "Term Size": item.get(
+                        "term_size",
+                        None,
+                    ),
+
+                    "Query Size": item.get(
+                        "query_size",
+                        None,
+                    ),
                 }
             )
 
@@ -405,76 +369,34 @@ def pathway_enrichment(genes):
                     "Term",
                     "Source",
                     "P-value",
+                    "Intersection Size",
+                    "Term Size",
+                    "Query Size",
                 ]
             )
 
-        result_df = pd.DataFrame(
-            results
-        )
+        return pd.DataFrame(results)
 
-        # ----------------------------------------------------
-        # Sort by P-value
-        # ----------------------------------------------------
+    # --------------------------------------------------------
+    # Request error
+    # --------------------------------------------------------
 
-        result_df["P-value"] = pd.to_numeric(
-            result_df["P-value"],
-            errors="coerce",
-        )
-
-        result_df = result_df.sort_values(
-            by="P-value",
-            ascending=True,
-        )
-
-        return result_df.reset_index(
-            drop=True
-        )
-
-    # ========================================================
-    # CONNECTION ERROR
-    # ========================================================
-
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.RequestException as e:
 
         return pd.DataFrame(
             columns=[
                 "Term",
                 "Source",
                 "P-value",
+                "Intersection Size",
+                "Term Size",
+                "Query Size",
             ]
         )
 
-    # ========================================================
-    # TIMEOUT
-    # ========================================================
-
-    except requests.exceptions.Timeout:
-
-        return pd.DataFrame(
-            columns=[
-                "Term",
-                "Source",
-                "P-value",
-            ]
-        )
-
-    # ========================================================
-    # HTTP ERROR
-    # ========================================================
-
-    except requests.exceptions.HTTPError:
-
-        return pd.DataFrame(
-            columns=[
-                "Term",
-                "Source",
-                "P-value",
-            ]
-        )
-
-    # ========================================================
-    # GENERAL ERROR
-    # ========================================================
+    # --------------------------------------------------------
+    # Unexpected error
+    # --------------------------------------------------------
 
     except Exception:
 
@@ -483,5 +405,8 @@ def pathway_enrichment(genes):
                 "Term",
                 "Source",
                 "P-value",
+                "Intersection Size",
+                "Term Size",
+                "Query Size",
             ]
         )
