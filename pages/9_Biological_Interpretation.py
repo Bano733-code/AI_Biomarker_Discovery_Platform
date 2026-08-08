@@ -1,32 +1,31 @@
-
 import os
-import streamlit as st
+
+import numpy as np
 import pandas as pd
+import streamlit as st
 
 from utils.biology import (
-    get_gene_information,
     annotate_genes,
     pathway_enrichment,
 )
 
 
 # ============================================================
-# PAGE CONFIGURATION
+# PAGE TITLE
 # ============================================================
 
 st.title("🧬 Biological Interpretation")
 
 st.markdown(
     """
-Use the highest-ranked candidate biomarkers to retrieve
-gene-level biological information and perform pathway
-enrichment analysis.
+Interpret the highest-ranked biomarkers using gene annotation
+and pathway enrichment analysis.
 """
 )
 
 
 # ============================================================
-# CHECK BIOMARKERS
+# CHECK BIOMARKER RESULTS
 # ============================================================
 
 if "final_biomarkers" not in st.session_state:
@@ -40,10 +39,6 @@ if "final_biomarkers" not in st.session_state:
 
 biomarkers = st.session_state["final_biomarkers"]
 
-
-# ============================================================
-# VALIDATE BIOMARKER DATA
-# ============================================================
 
 if biomarkers is None or biomarkers.empty:
 
@@ -69,17 +64,25 @@ if "Gene" not in biomarkers.columns:
 
 
 # ============================================================
-# SELECT TOP BIOMARKERS
+# SELECT NUMBER OF BIOMARKERS
 # ============================================================
+
+max_genes = min(20, len(biomarkers))
+
+default_genes = min(10, max_genes)
 
 top_n = st.slider(
     "Number of biomarkers to interpret",
-    min_value=5,
-    max_value=min(20, len(biomarkers)),
-    value=min(10, len(biomarkers)),
-    step=1
+    min_value=1,
+    max_value=max_genes,
+    value=default_genes,
+    step=1,
 )
 
+
+# ============================================================
+# GET TOP BIOMARKERS
+# ============================================================
 
 top_genes = (
     biomarkers
@@ -91,43 +94,42 @@ top_genes = (
 )
 
 
-# Remove empty values and duplicates
+# Remove empty strings and duplicates
 top_genes = list(
     dict.fromkeys(
-        gene for gene in top_genes
+        gene
+        for gene in top_genes
         if gene
     )
 )
 
 
-# ============================================================
-# SELECTED BIOMARKERS
-# ============================================================
-
-st.subheader("🔬 Selected Biomarkers")
-
 if not top_genes:
 
-    st.warning(
+    st.error(
         "No valid biomarker identifiers were found."
     )
 
     st.stop()
 
 
-st.write(
-    f"Using the top {len(top_genes)} biomarkers:"
+# ============================================================
+# DISPLAY SELECTED BIOMARKERS
+# ============================================================
+
+st.subheader("🔬 Selected Biomarkers")
+
+selected_df = pd.DataFrame(
+    {
+        "Rank": range(1, len(top_genes) + 1),
+        "Gene / Feature": top_genes,
+    }
 )
 
 st.dataframe(
-    pd.DataFrame(
-        {
-            "Rank": range(1, len(top_genes) + 1),
-            "Gene / Feature": top_genes
-        }
-    ),
+    selected_df,
     use_container_width=True,
-    hide_index=True
+    hide_index=True,
 )
 
 
@@ -137,12 +139,12 @@ st.dataframe(
 
 os.makedirs(
     "results",
-    exist_ok=True
+    exist_ok=True,
 )
 
 
 # ============================================================
-# GENE INFORMATION
+# GENE ANNOTATION
 # ============================================================
 
 st.divider()
@@ -151,7 +153,7 @@ st.subheader("🧬 Gene Information")
 
 if st.button(
     "🔎 Get Gene Information",
-    use_container_width=True
+    use_container_width=True,
 ):
 
     with st.spinner(
@@ -164,25 +166,30 @@ if st.button(
                 top_genes
             )
 
-            if annotations is None or annotations.empty:
+            if (
+                annotations is None
+                or annotations.empty
+            ):
 
                 st.warning(
                     "No gene information could be retrieved."
                 )
 
+                st.session_state[
+                    "gene_annotations"
+                ] = pd.DataFrame()
+
             else:
 
-                # Save annotations
                 annotation_path = (
                     "results/gene_annotations.csv"
                 )
 
                 annotations.to_csv(
                     annotation_path,
-                    index=False
+                    index=False,
                 )
 
-                # Store in session state
                 st.session_state[
                     "gene_annotations"
                 ] = annotations
@@ -203,7 +210,7 @@ if st.button(
 
 
 # ============================================================
-# DISPLAY GENE INFORMATION
+# DISPLAY ANNOTATIONS
 # ============================================================
 
 if "gene_annotations" in st.session_state:
@@ -224,12 +231,13 @@ if "gene_annotations" in st.session_state:
         st.dataframe(
             annotations,
             use_container_width=True,
-            hide_index=True
+            hide_index=True,
         )
 
-        # ----------------------------------------------------
-        # Individual Gene Details
-        # ----------------------------------------------------
+
+        # ====================================================
+        # INDIVIDUAL GENE DETAILS
+        # ====================================================
 
         if "Gene" in annotations.columns:
 
@@ -237,9 +245,15 @@ if "gene_annotations" in st.session_state:
                 "🔬 Gene Details"
             )
 
+            available_genes = (
+                annotations["Gene"]
+                .astype(str)
+                .tolist()
+            )
+
             selected_gene = st.selectbox(
                 "Select a biomarker",
-                annotations["Gene"].astype(str).tolist()
+                available_genes,
             )
 
             selected_rows = annotations[
@@ -257,39 +271,51 @@ if "gene_annotations" in st.session_state:
 
                     if "Symbol" in annotations.columns:
 
-                        st.metric(
-                            "Gene Symbol",
+                        st.write(
+                            "**Gene Symbol**"
+                        )
+
+                        st.write(
                             str(
                                 row.get(
                                     "Symbol",
-                                    "Not available"
+                                    "Not available",
                                 )
                             )
                         )
 
+
                     if "Name" in annotations.columns:
 
-                        st.write("**Gene Name**")
+                        st.write(
+                            "**Gene Name**"
+                        )
 
                         st.write(
-                            row.get(
-                                "Name",
-                                "Not available"
+                            str(
+                                row.get(
+                                    "Name",
+                                    "Not available",
+                                )
                             )
                         )
 
                 with col2:
 
-                    st.write(
-                        "**Biological Summary**"
-                    )
+                    if "Summary" in annotations.columns:
 
-                    st.write(
-                        row.get(
-                            "Summary",
-                            "No description available."
+                        st.write(
+                            "**Biological Summary**"
                         )
-                    )
+
+                        st.write(
+                            str(
+                                row.get(
+                                    "Summary",
+                                    "No description available.",
+                                )
+                            )
+                        )
 
 
 # ============================================================
@@ -304,15 +330,15 @@ st.subheader(
 
 st.markdown(
     """
-Identify biological processes and pathways that are
-over-represented among the selected biomarkers.
+Identify biological pathways and functional terms
+associated with the selected biomarkers.
 """
 )
 
 
 if st.button(
     "🚀 Run Pathway Enrichment",
-    use_container_width=True
+    use_container_width=True,
 ):
 
     with st.spinner(
@@ -325,18 +351,22 @@ if st.button(
                 top_genes
             )
 
-            if pathways is None or pathways.empty:
+            if (
+                pathways is None
+                or pathways.empty
+            ):
 
                 st.warning(
                     """
-                    No significantly enriched pathways were returned.
+No enriched pathways were returned.
 
-                    This can happen when:
-                    - the selected features are probe IDs rather than gene symbols
-                    - too few biomarkers were selected
-                    - the genes do not have sufficient pathway annotations
-                    - the enrichment service returned no significant results
-                    """
+Possible reasons:
+
+• The selected features may be probe IDs rather than gene symbols.
+• Too few biomarkers were selected.
+• The genes may have limited pathway annotations.
+• The enrichment service may have returned no significant results.
+"""
                 )
 
                 st.session_state[
@@ -351,7 +381,7 @@ if st.button(
 
                 pathways.to_csv(
                     pathway_path,
-                    index=False
+                    index=False,
                 )
 
                 st.session_state[
@@ -383,7 +413,10 @@ if "pathways" in st.session_state:
         "pathways"
     ]
 
-    if pathways is not None and not pathways.empty:
+    if (
+        pathways is not None
+        and not pathways.empty
+    ):
 
         st.subheader(
             "📊 Enriched Biological Pathways"
@@ -392,12 +425,13 @@ if "pathways" in st.session_state:
         st.dataframe(
             pathways,
             use_container_width=True,
-            hide_index=True
+            hide_index=True,
         )
 
-        # ----------------------------------------------------
-        # Simple visualization
-        # ----------------------------------------------------
+
+        # ====================================================
+        # PATHWAY SIGNIFICANCE
+        # ====================================================
 
         if "P-value" in pathways.columns:
 
@@ -409,27 +443,34 @@ if "pathways" in st.session_state:
 
             plot_df["P-value"] = pd.to_numeric(
                 plot_df["P-value"],
-                errors="coerce"
+                errors="coerce",
             )
 
             plot_df = plot_df.dropna(
                 subset=["P-value"]
             )
 
+            # Remove zero/negative values
+            plot_df = plot_df[
+                plot_df["P-value"] > 0
+            ]
+
             if not plot_df.empty:
 
                 plot_df = plot_df.head(15)
 
                 plot_df["-log10(P-value)"] = (
-                    -__import__("numpy").log10(
+                    -np.log10(
                         plot_df["P-value"]
                     )
                 )
 
+                chart_df = plot_df[
+                    ["Term", "-log10(P-value)"]
+                ].set_index("Term")
+
                 st.bar_chart(
-                    plot_df.set_index("Term")[
-                        "-log10(P-value)"
-                    ]
+                    chart_df
                 )
 
 
@@ -440,7 +481,7 @@ if "pathways" in st.session_state:
 st.divider()
 
 st.subheader(
-    "📥 Download Biological Results"
+    "📥 Download Results"
 )
 
 
@@ -450,7 +491,10 @@ if "gene_annotations" in st.session_state:
         "gene_annotations"
     ]
 
-    if annotations is not None and not annotations.empty:
+    if (
+        annotations is not None
+        and not annotations.empty
+    ):
 
         st.download_button(
             label="Download Gene Annotations",
@@ -459,7 +503,7 @@ if "gene_annotations" in st.session_state:
             ),
             file_name="gene_annotations.csv",
             mime="text/csv",
-            use_container_width=True
+            use_container_width=True,
         )
 
 
@@ -469,7 +513,10 @@ if "pathways" in st.session_state:
         "pathways"
     ]
 
-    if pathways is not None and not pathways.empty:
+    if (
+        pathways is not None
+        and not pathways.empty
+    ):
 
         st.download_button(
             label="Download Pathway Enrichment",
@@ -478,6 +525,5 @@ if "pathways" in st.session_state:
             ),
             file_name="pathway_enrichment.csv",
             mime="text/csv",
-            use_container_width=True
+            use_container_width=True,
         )
-```
