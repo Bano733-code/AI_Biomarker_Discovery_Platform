@@ -1,17 +1,15 @@
 <div align="center">
-
 # 🧬 AI Biomarker Discovery Platform
 
 ![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-App-red.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)
-</div>
 
 An end-to-end **AI-powered biomarker discovery platform** that integrates bioinformatics, machine learning, and explainable AI to identify potential disease-associated biomarkers from gene expression data.
 
 The platform allows researchers to upload or automatically retrieve public gene expression datasets, perform preprocessing, train machine learning models, interpret predictions using SHAP explainability, and generate biological insights.
-
+</div>
 ---
 
 # 🚀 Project Overview
