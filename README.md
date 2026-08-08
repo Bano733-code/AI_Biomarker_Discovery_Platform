@@ -13,7 +13,6 @@ An end-to-end **AI-powered biomarker discovery platform** that integrates bioinf
 
 The platform allows researchers to upload or automatically retrieve public gene expression datasets, perform preprocessing, train machine learning models, interpret predictions using SHAP explainability, and generate biological insights.
 </div>
----
 
 # 🚀 Project Overview
 
